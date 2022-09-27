@@ -4,7 +4,7 @@ from numba import float64
 from numba import int64
 
 
-# @jit((float64[:], int64), nopython=True, nogil=True)
+@jit((float64[:], int64), nopython=True, nogil=True)
 def fast_ewma(arr_in, window):
     r"""Exponentialy weighted moving average specified by a decay ``window``
     to provide better adjustments for small windows via:
