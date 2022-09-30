@@ -146,7 +146,7 @@ def _compute_imbalance_bar_sizes(
     :param abs_E_b_init: initial value for |E_b|
     :param T_ewma_window: number of bars in EWMA window of number of ticks in bar. If None or 0, all bars are used
     :param b_ewma_window: number of ticks in EWMA window of tick direction or volume/dollars signed flows.
-    :return: end tick index for each bar, bar sizes, theta list, imbalance threshold list
+    :return: end tick index for each bar, bar sizes, theta array, imbalance threshold array
     """
 
     def _update_threshold():
@@ -162,13 +162,14 @@ def _compute_imbalance_bar_sizes(
     cur_abs_E_b = abs_E_b_init
     cur_theta = b_arr[0]
     cur_threshold = _update_threshold()
+    is_padding_bar = False
 
     abs_theta_arr = np.zeros(num_ticks)
     abs_theta_arr[0] = np.abs(b_arr[0])
     thresholds = np.zeros(num_ticks)
     thresholds[0] = cur_threshold
 
-    print(f'Init: E_T={cur_E_T},abs_E_b={cur_abs_E_b},threshold={cur_threshold}')
+    # print(f'Init: E_T={cur_E_T},abs_E_b={cur_abs_E_b},threshold={cur_threshold}')
 
     for i in range(1, num_ticks):
         cur_bar_size += abs(b_arr[i])
@@ -178,11 +179,16 @@ def _compute_imbalance_bar_sizes(
         abs_theta_arr[i] = abs_theta
         thresholds[i] = cur_threshold
 
-        if (abs_theta >= cur_threshold and cur_bar_size >= min_bar_size) or cur_bar_size >= max_bar_size:
+        if abs_theta >= cur_threshold or cur_bar_size >= max_bar_size or is_padding_bar:
+            if cur_bar_size < min_bar_size:
+                is_padding_bar = True
+                continue
+
             T_arr.append(np.float64(i - cur_bar_start + 1))
             bar_end_indices.append(i)
-            print(f'Bar: size={cur_bar_size},num_ticks={T_arr[-1]},end_tick={bar_end_indices[-1]}')
+            # print(f'Bar: size={cur_bar_size},num_ticks={T_arr[-1]},end_tick={bar_end_indices[-1]}')
 
+            is_padding_bar = False
             cur_bar_start = i + 1
             cur_bar_size = 0
             cur_T_ewma_window = len(T_arr) if not T_ewma_window else T_ewma_window
@@ -191,13 +197,13 @@ def _compute_imbalance_bar_sizes(
             cur_abs_E_b = np.abs(fast_ewma(b_arr[:i], window=np.int64(cur_b_ewma_window))[-1])
             cur_theta = 0
             cur_threshold = cur_E_T * cur_abs_E_b
-            print(f'  Expect: E_T={cur_E_T},abs_E_b={cur_abs_E_b},threshold={cur_threshold}')
+            # print(f'  Expect: E_T={cur_E_T},abs_E_b={cur_abs_E_b},threshold={cur_threshold}')
 
     if cur_bar_start < num_ticks:
         bar_end_indices.append(num_ticks - 1)
         T_arr.append(num_ticks - cur_bar_start)
 
-    return bar_end_indices
+    return bar_end_indices, T_arr, abs_theta_arr, thresholds
 
 
 def aggregate_imblance_bars(
@@ -209,7 +215,8 @@ def aggregate_imblance_bars(
         E_T_init=1000,
         abs_E_b_init=None,
         T_ewma_window=None,
-        b_ewma_window=None
+        b_ewma_window=None,
+        debug=False
 ):
     """
     :param ticks: DataFrame of TickCols
@@ -224,13 +231,14 @@ def aggregate_imblance_bars(
         If None or 0, all bars are used
     :param b_ewma_window: number of ticks in EWMA window of tick direction or volume/dollars signed flows.
         If None or 0, 3*E_T_init is used.
+    :param debug: returns ticks df with addition info
     :return: DataFrame of BarCol columns
     """
     b_arr = _compute_tick_rule(ticks, b0=b0)
     if bar_unit == BarUnit.VOLUME:
-        b_arr *= ticks[TickCol.VOLUME]
+        b_arr *= ticks[TickCol.VOLUME].values
     elif bar_unit == BarUnit.DOLLARS:
-        b_arr *= ticks[TickCol.PRICE]*ticks[TickCol.VOLUME]
+        b_arr *= (ticks[TickCol.PRICE]*ticks[TickCol.VOLUME]).values
     elif bar_unit == BarUnit.TICK:
         pass
     else:
@@ -240,14 +248,18 @@ def aggregate_imblance_bars(
         abs_E_b_init = np.abs(b_arr[:E_T_init].mean())
     if b_ewma_window is None:
         b_ewma_window = 3*E_T_init
-    bar_end_indices = _compute_imbalance_bar_sizes(
+    bar_end_indices, bar_sizes, thetas, thresholds = _compute_imbalance_bar_sizes(
         b_arr, min_bar_size, max_bar_size, E_T_init, abs_E_b_init, T_ewma_window, b_ewma_window
     )
 
     bar_id_arr = _compute_tick_bar_id(ticks, bar_end_indices)
     df = ticks.reset_index(drop=True)
     df['bar_id'] = bar_id_arr
-    return _group_ticks_to_bars(df)
+    res = _group_ticks_to_bars(df)
+    if debug:
+        df = df.assign(theta=thetas, threshold=thresholds)
+        return res, df
+    return res
 
 
 def _compute_runs_bar_sizes(
@@ -281,7 +293,7 @@ def _compute_runs_bar_sizes(
     :param E_v_sell_init: initial value for E_v_sell
     :param T_ewma_window: number of bars in EWMA window of number of ticks in bar. If None or 0, all bars are used
     :param b_ewma_window: number of ticks in EWMA window of volume/dollars quantity traded.
-    :return: end tick index for each bar, bar sizes, theta list, imbalance threshold list
+    :return: end tick index for each bar, bar sizes, theta array, runs threshold array
     """
 
     def _update_threshold():
@@ -306,14 +318,15 @@ def _compute_runs_bar_sizes(
     cur_threshold = _update_threshold()
     cur_bar_start = 0
     cur_bar_size = v_arr[0]
+    is_padding_bar = False
 
     theta_arr = np.zeros(num_ticks)
     theta_arr[0] = cur_theta
     thresholds = np.zeros(num_ticks)
     thresholds[0] = cur_threshold
 
-    print(f'Init: E_T={cur_E_T},P_b_buy={cur_P_b_buy},E_v_buy={cur_E_v_buy},' +
-          f'E_v_sell={cur_E_v_sell},threshold={cur_threshold}')
+    # print(f'Init: E_T={cur_E_T},P_b_buy={cur_P_b_buy},E_v_buy={cur_E_v_buy},' +
+    #       f'E_v_sell={cur_E_v_sell},threshold={cur_threshold}')
 
     for i in range(1, num_ticks):
         cur_bar_size += v_arr[i]
@@ -329,13 +342,18 @@ def _compute_runs_bar_sizes(
         theta_arr[i] = cur_theta
         thresholds[i] = cur_threshold
 
-        if (cur_theta >= cur_threshold and cur_bar_size >= min_bar_size) or cur_bar_size >= max_bar_size:
+        if cur_theta >= cur_threshold or cur_bar_size >= max_bar_size or is_padding_bar:
+            if cur_bar_size < min_bar_size:
+                is_padding_bar = True
+                continue
+
             ticks_in_bar = np.float64(i - cur_bar_start + 1)
             T_arr.append(ticks_in_bar)
             b_buy_ratio_arr.append(cur_buy_runs / ticks_in_bar)
             bar_end_indices.append(i)
-            print(f'Bar: size={cur_bar_size},num_ticks={T_arr[-1]},end_tick={bar_end_indices[-1]}')
+            # print(f'Bar: size={cur_bar_size},num_ticks={T_arr[-1]},end_tick={bar_end_indices[-1]}')
 
+            is_padding_bar = False
             cur_buy_runs = 0
             cur_v_buy_runs = 0
             cur_v_sell_runs = 0
@@ -349,14 +367,14 @@ def _compute_runs_bar_sizes(
             cur_v_sell_ewma_window = min(len(v_sell_arr), b_ewma_window)
             cur_E_v_sell = fast_ewma(np.array(v_sell_arr), window=np.int64(cur_v_sell_ewma_window))[-1]
             cur_threshold = _update_threshold()
-            print(f'  Expect: E_T={cur_E_T},P_b_buy={cur_P_b_buy},E_v_buy={cur_E_v_buy},' +
-                  f'E_v_sell={cur_E_v_sell},threshold={cur_threshold}')
+            # print(f'  Expect: E_T={cur_E_T},P_b_buy={cur_P_b_buy},E_v_buy={cur_E_v_buy},' +
+            #       f'E_v_sell={cur_E_v_sell},threshold={cur_threshold}')
 
     if cur_bar_start < num_ticks:
         bar_end_indices.append(num_ticks - 1)
         T_arr.append(num_ticks - cur_bar_start)
 
-    return bar_end_indices
+    return bar_end_indices, T_arr, theta_arr, thresholds
 
 
 def aggregate_runs_bars(
@@ -371,6 +389,7 @@ def aggregate_runs_bars(
         E_v_sell_init=None,
         T_ewma_window=None,
         b_ewma_window=None,
+        debug=False
 ):
     """
     :param ticks: DataFrame of TickCols
@@ -389,6 +408,7 @@ def aggregate_runs_bars(
         If None or 0, all bars are used
     :param b_ewma_window: number of ticks in EWMA window of volume/dollars quantity traded.
         If None or 0, 3*E_T_init is used
+    :param debug: return ticks DataFrame with additional colums for debugging
     :return: DataFrame of BarCol columns
     """
     b_arr = _compute_tick_rule(ticks, b0=b0)
@@ -410,7 +430,7 @@ def aggregate_runs_bars(
     if b_ewma_window is None:
         b_ewma_window = 3*E_T_init
 
-    bar_end_indices = _compute_runs_bar_sizes(
+    bar_end_indices, bar_size, thetas, thresholds = _compute_runs_bar_sizes(
         b_arr,
         v_arr,
         min_bar_size,
@@ -426,4 +446,8 @@ def aggregate_runs_bars(
     bar_id_arr = _compute_tick_bar_id(ticks, bar_end_indices)
     df = ticks.reset_index(drop=True)
     df['bar_id'] = bar_id_arr
-    return _group_ticks_to_bars(df)
+    res = _group_ticks_to_bars(df)
+    if debug:
+        df = df.assign(theta=thetas, threshold=thresholds)
+        return res, df
+    return res
