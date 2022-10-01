@@ -2,12 +2,16 @@ import pandas as pd
 import pytest
 
 import data_structures.bars as bars
-from data_structures.constants import BarUnit, BarCol
+from data_structures.constants import BarUnit, BarCol, TickCol
 
-ticks = pd.read_csv('../data/trade_20220920.csv')
+ticks = pd.read_csv('../../data/trade_20220920.csv')
 ticks = ticks[ticks['symbol'] == 'XBTUSD'][['timestamp', 'price', 'foreignNotional']]
 ticks['timestamp'] = pd.to_datetime(ticks['timestamp'].str.slice(0, -3), format='%Y-%m-%dD%H:%M:%S.%f')
-ticks = ticks.rename(columns={'foreignNotional': 'volume'})
+ticks = ticks.rename(columns={
+    'timestamp': TickCol.TIMESTAMP,
+    'price': TickCol.PRICE,
+    'foreignNotional': TickCol.VOLUME,
+})
 ticks = ticks.reset_index(drop=True)
 
 

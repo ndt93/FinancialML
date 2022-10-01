@@ -2,19 +2,19 @@ from enum import Enum, unique
 
 
 class TickCol:
-    TIMESTAMP = 'timestamp'
-    PRICE = 'price'
-    VOLUME = 'volume'
+    TIMESTAMP = 'Timestamp'
+    PRICE = 'Price'
+    VOLUME = 'Volume'
 
 
 class BarCol:
-    TIMESTAMP = 'timestamp'
-    OPEN = 'open'
-    HIGH = 'high'
-    LOW = 'low'
-    CLOSE = 'close'
-    VOLUME = 'volume'
-    VWAP = 'vwap'
+    TIMESTAMP = 'Timestamp'
+    OPEN = 'Open'
+    HIGH = 'High'
+    LOW = 'Low'
+    CLOSE = 'Close'
+    VOLUME = 'Volume'
+    VWAP = 'VWAP'
 
 
 @unique
