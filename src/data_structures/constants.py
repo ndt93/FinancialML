@@ -16,6 +16,7 @@ class BarCol:
     VOLUME = 'Volume'
     VWAP = 'VWAP'
 
+    RET_PRICES = 'rPrice'
 
 @unique
 class BarUnit(Enum):
@@ -23,3 +24,7 @@ class BarUnit(Enum):
     TICK = 2
     VOLUME = 3
     DOLLARS = 4
+
+
+class ContractCol:
+    CONTRACT = 'Contract'
