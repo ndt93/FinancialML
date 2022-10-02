@@ -17,6 +17,7 @@ class BarCol:
     VWAP = 'VWAP'
 
     RET_PRICES = 'rPrice'
+    DIVIDEND = 'Dividend'
 
 @unique
 class BarUnit(Enum):

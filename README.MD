@@ -17,3 +17,4 @@ learning researchers, investment portfolio managers or quantitative trading prac
 * Kolanovic, M. and R. Krishnamachari (2017): “Big data and AI strategies: Machine learning and alternative data approach to investing.” White paper, JP Morgan, Quantitative and Derivatives Strategy. May 18.
 * Bailey, David H., and M. L´opez de Prado (2012): “Balanced baskets: A new approach to trading and hedging risks.” Journal of Investment Strategies (Risk Journals), Vol. 1, No. 4 (Fall), pp. 21–62.
 * L´opez de Prado, M. and D. Leinweber (2012): “Advances in cointegration and subset correlation hedging methods.” Journal of Investment Strategies (Risk Journals), Vol. 1, No. 2 (Spring), pp. 67–115.
+* Clark, P. K. (1973): “A subordinated stochastic process model with finite variance for speculative prices.” Econometrica, Vol. 41, pp. 135–155.
