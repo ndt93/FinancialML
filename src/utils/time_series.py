@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from numba import jit
 from numba import float64
 from numba import int64
@@ -86,3 +87,19 @@ def fast_ewma_inf_hist(arr_in, window):
     for i in range(1, n):
         ewma[i] = arr_in[i] * alpha + ewma[i-1] * (1 - alpha)
     return ewma
+
+
+def get_daily_volatility(close: pd.Series, ewm_span: int, is_intraday=True):
+    """
+    :param close: Series of close prices
+    :param ewm_span: ewm days span for estimating the volatility
+    :param is_intraday: True if series contain intraday data. False if only daily data is available
+    :return:
+    """
+    prev_day_idx = close.index.searchsorted(close.index - pd.Timedelta(days=1))
+    prev_day_idx = prev_day_idx[prev_day_idx > 0]
+    if is_intraday:
+        prev_day_idx -= 1
+    day_pairs = pd.Series(close.index[prev_day_idx], index=close.index[close.shape[0] - prev_day_idx.shape[0]:])
+    daily_returns = pd.Series(close.loc[day_pairs.index].values / close.loc[day_pairs.values].values) - 1
+    return daily_returns.ewm(span=ewm_span).std()
