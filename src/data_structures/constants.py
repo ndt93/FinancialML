@@ -29,3 +29,15 @@ class BarUnit(Enum):
 
 class ContractCol:
     CONTRACT = 'Contract'
+
+
+class EventCol:
+    EXPIRY = 'Expiry'
+    TARGET = 'Target'
+    SIDE = 'Side'
+    PT_TIME = 'PT_Time'  # Profit taking
+    SL_TIME = 'SL_Time'  # Stop loss
+    END_TIME = 'End_Time'
+
+    RETURN = 'Return'
+    LABEL = 'Label'

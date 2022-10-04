@@ -1,92 +1,34 @@
 import numpy as np
 import pandas as pd
-from numba import jit
-from numba import float64
-from numba import int64
+from numba import jit, float64, int64, boolean
 
 
-@jit((float64[:], int64), nopython=True, nogil=True)
-def fast_ewma(arr_in, window):
-    r"""Exponentialy weighted moving average specified by a decay ``window``
-    to provide better adjustments for small windows via:
-        y[t] = (x[t] + (1-a)*x[t-1] + (1-a)^2*x[t-2] + ... + (1-a)^n*x[t-n]) /
-               (1 + (1-a) + (1-a)^2 + ... + (1-a)^n).
-    Parameters
-    ----------
-    arr_in : np.ndarray, float64
-        A single dimenisional numpy array
-    window : int64
-        The decay window, or 'span'
-    Returns
-    -------
-    np.ndarray
-        The EWMA vector, same length / shape as ``arr_in``
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> a = np.arange(5, dtype=float)
-    >>> exp = pd.DataFrame(a).ewm(span=10, adjust=True).mean()
-    >>> np.array_equal(fast_ewma_inf_hist(a, 10), exp.values.ravel())
-    True
+@jit((float64[:], int64, boolean), nopython=True, nogil=True)
+def fast_ewma(series, span, adjust):
     """
-    n = arr_in.shape[0]
+    Faster runtime implementation of pandas's ewm with adjust=True
+
+    :param series: array of numerical values
+    :param span: specify decay in terms of span. alpha = 2/(span + 1)
+    :return: ewm series
+    """
+    n = series.shape[0]
     ewma = np.empty(n, dtype=np.float64)
-    alpha = 2 / float(window + 1)
-    w = 1
-    ewma_old = arr_in[0]
-    ewma[0] = ewma_old
-    for i in range(1, n):
-        w += (1-alpha)**i
-        ewma_old = ewma_old*(1-alpha) + arr_in[i]
-        ewma[i] = ewma_old / w
-    return ewma
-
-
-@jit((float64[:], int64), nopython=True, nogil=True)
-def fast_ewma_inf_hist(arr_in, window):
-    r"""Exponentialy weighted moving average specified by a decay ``window``
-    assuming infinite history via the recursive form:
-
-        (2) (i)  y[0] = x[0]; and
-            (ii) y[t] = a*x[t] + (1-a)*y[t-1] for t>0.
-
-    This method is less accurate that ``_ewma`` but
-    much faster:
-
-        In [1]: import numpy as np, bars
-           ...: arr = np.random.random(100000)
-           ...: %timeit bars._ewma(arr, 10)
-           ...: %timeit bars._ewma_infinite_hist(arr, 10)
-        3.74 ms ± 60.2 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
-        262 µs ± 1.54 µs per loop (mean ± std. dev. of 7 runs, 1000 loops each)
-
-    Parameters
-    ----------
-    arr_in : np.ndarray, float64
-        A single dimenisional numpy array
-    window : int64
-        The decay window, or 'span'
-
-    Returns
-    -------
-    np.ndarray
-        The EWMA vector, same length / shape as ``arr_in``
-
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> a = np.arange(5, dtype=float)
-    >>> exp = pd.DataFrame(a).ewm(span=10, adjust=False).mean()
-    >>> np.array_equal(fast_ewma_inf_hist(a, 10), exp.values.ravel())
-    True
-    """
-    n = arr_in.shape[0]
-    ewma = np.empty(n, dtype=float64)
-    alpha = 2 / float(window + 1)
-    ewma[0] = arr_in[0]
-    for i in range(1, n):
-        ewma[i] = arr_in[i] * alpha + ewma[i-1] * (1 - alpha)
-    return ewma
+    alpha = 2 / float(span + 1)
+    if adjust:
+        w = 1
+        ewma_old = series[0]
+        ewma[0] = ewma_old
+        for i in range(1, n):
+            w += (1 - alpha)**i
+            ewma_old = ewma_old * (1 - alpha) + series[i]
+            ewma[i] = ewma_old / w
+        return ewma
+    else:
+        ewma[0] = series[0]
+        for i in range(1, n):
+            ewma[i] = series[i] * alpha + ewma[i - 1] * (1 - alpha)
+        return ewma
 
 
 def get_daily_volatility(close: pd.Series, ewm_span: int, is_intraday=True):
@@ -103,3 +45,15 @@ def get_daily_volatility(close: pd.Series, ewm_span: int, is_intraday=True):
     day_pairs = pd.Series(close.index[prev_day_idx], index=close.index[close.shape[0] - prev_day_idx.shape[0]:])
     daily_returns = pd.Series(close.loc[day_pairs.index].values / close.loc[day_pairs.values].values) - 1
     return daily_returns.ewm(span=ewm_span).std()
+
+
+def get_vertical_barriers(series: pd.Series, events: pd.Series, holding_period: int):
+    """
+    :param series: a series with a DateTimeIndex
+    :param events: a series of events' timestamps
+    :param holding_period: number of days after each event where there's a vertical barrier
+    :return: a series of timestamps of the vertical barriers
+    """
+    barrier_indices = series.index.searchsorted(events + pd.Timedelta(days=holding_period))
+    barrier_indices = barrier_indices[barrier_indices < series.shape[0]]
+    barriers = pd.Series(series.index[barrier_indices], index=events[:barrier_indices.shape[0]])

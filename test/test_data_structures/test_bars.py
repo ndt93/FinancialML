@@ -4,7 +4,7 @@ import pytest
 import data_structures.bars as bars
 from data_structures.constants import BarUnit, BarCol, TickCol
 
-ticks = pd.read_csv('../../data/trade_20220920.csv')
+ticks = pd.read_csv('../data/trade_20220920.csv')
 ticks = ticks[ticks['symbol'] == 'XBTUSD'][['timestamp', 'price', 'foreignNotional']]
 ticks['timestamp'] = pd.to_datetime(ticks['timestamp'].str.slice(0, -3), format='%Y-%m-%dD%H:%M:%S.%f')
 ticks = ticks.rename(columns={
@@ -70,8 +70,8 @@ def test_tick_imbalance_bars(ticks_sample):
         b0=-1,
         E_T_init=1000,
         abs_E_b_init=None,
-        T_ewma_window=None,
-        b_ewma_window=None,
+        T_ewma_span=None,
+        b_ewma_span=None,
         debug=True
     )
     assert list(tick_imbalance_bars.columns.values) == [
@@ -94,8 +94,8 @@ def test_volume_imbalance_bars(ticks_sample):
         b0=-1,
         E_T_init=1000,
         abs_E_b_init=None,
-        T_ewma_window=None,
-        b_ewma_window=None
+        T_ewma_span=None,
+        b_ewma_span=None
     )
     assert list(volume_imbalance_bars.columns.values) == [
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
@@ -117,8 +117,8 @@ def test_dollars_imbalance_bars(ticks_sample):
         b0=-1,
         E_T_init=1000,
         abs_E_b_init=None,
-        T_ewma_window=None,
-        b_ewma_window=None
+        T_ewma_span=None,
+        b_ewma_span=None
     )
     assert list(dollars_imbalance_bars.columns.values) == [
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
@@ -142,8 +142,8 @@ def test_tick_runs_bars(ticks_sample):
         P_b_buy_init=None,
         E_v_buy_init=None,
         E_v_sell_init=None,
-        T_ewma_window=None,
-        b_ewma_window=None,
+        T_ewma_span=None,
+        b_ewma_span=None,
         debug=True
     )
     assert list(tick_runs_bars.columns.values) == [
@@ -168,8 +168,8 @@ def test_volume_runs_bars(ticks_sample):
         P_b_buy_init=None,
         E_v_buy_init=None,
         E_v_sell_init=None,
-        T_ewma_window=None,
-        b_ewma_window=None,
+        T_ewma_span=None,
+        b_ewma_span=None,
     )
     assert list(volume_runs_bars.columns.values) == [
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
@@ -193,8 +193,8 @@ def test_dollars_runs_bars(ticks_sample):
         P_b_buy_init=None,
         E_v_buy_init=None,
         E_v_sell_init=None,
-        T_ewma_window=None,
-        b_ewma_window=None,
+        T_ewma_span=None,
+        b_ewma_span=None,
     )
     assert list(dollar_runs_bars.columns.values) == [
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
