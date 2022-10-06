@@ -4,7 +4,7 @@ import numpy as np
 from data_structures.constants import EventCol
 
 
-def get_barrier_break_times(prices: pd.Series, events: pd.DataFrame, multipliers: (float, float)) -> pd.DataFrame:
+def _get_barrier_break_times(prices: pd.Series, events: pd.DataFrame, multipliers: (float, float)) -> pd.DataFrame:
     """
     Get timestamps when price breaks the horizontal barriers (e.g. profit taking and stop loss limits)
     and vertical barrier (e.g. order cancelled or closed after some time limit) after each event
@@ -21,8 +21,8 @@ def get_barrier_break_times(prices: pd.Series, events: pd.DataFrame, multipliers
     """
     res = events[[EventCol.EXPIRY]].copy()
     pt_mulp, sl_mulp = multipliers
-    assert pt_mulp > 0
-    assert sl_mulp > 0
+    assert pt_mulp >= 0
+    assert sl_mulp >= 0
     pt_limits = pt_mulp * events[EventCol.TARGET] if pt_mulp > 0 else pd.Series(index=events.index)
     st_limits = -sl_mulp * events[EventCol.TARGET] if sl_mulp > 0 else pd.Series(index=events.index)
 
@@ -37,9 +37,9 @@ def get_barrier_break_times(prices: pd.Series, events: pd.DataFrame, multipliers
 
 def get_event_end_times(
         prices: pd.Series,
-        events: pd.DatetimeIndex,
+        events: pd.Series | pd.DatetimeIndex,
         targets: pd.Series,
-        multipliers: (float, float),
+        multipliers: tuple[float, float],
         expiries: pd.Series,
         min_return: float,
         sides=None
@@ -49,7 +49,7 @@ def get_event_end_times(
     or vertical barrier (e.g. order cancelled or closed after some time limit)
 
     :param prices: a time series of prices with a DataTimeIndex
-    :param events: a timeindex sampled from bars which seed the onset of some trading actions
+    :param events: a datetime series sampled from bars which seed the onset of some trading actions
     :param targets: a series of targets in absolute returns
     :param multipliers: a tuple of 2 floats, 1 for each of the horizontal barrier.
         The barrier's width = multiplier * target. If side=None, only the first multipler is used for both barrier
@@ -76,8 +76,8 @@ def get_event_end_times(
         EventCol.SIDE: event_sides
     }, axis=1)
     events_df = events_df.dropna(subset=[EventCol.TARGET])
-    touch_times = get_barrier_break_times(prices, events_df, multipliers)
-    events_df[EventCol.END_TIME] = touch_times.dropna(how='all').min(axis=1)
+    break_times = _get_barrier_break_times(prices, events_df, multipliers)
+    events_df[EventCol.END_TIME] = break_times.dropna(how='all').min(axis=1)
     if sides is None:
         events_df = events_df.drop(columns=[EventCol.SIDE])
     return events_df
@@ -98,8 +98,8 @@ def get_event_labels(events: pd.DataFrame, prices: pd.Series, cancel_expired_eve
     """
     events = events.dropna(subset=[EventCol.END_TIME])
     all_start_end_times = events.index.union(events[EventCol.END_TIME].values).drop_duplicates()
-    event_prices = prices.reindex(all_start_end_times, method='bill')
-    event_start_prices = events.loc[events.index]
+    event_prices = prices.reindex(all_start_end_times, method='bfill')
+    event_start_prices = event_prices.loc[events.index]
     event_end_prices = event_prices.loc[events[EventCol.END_TIME].values].values
     res = pd.DataFrame(index=events.index)
 

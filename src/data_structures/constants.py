@@ -32,6 +32,7 @@ class ContractCol:
 
 
 class EventCol:
+    START_TIME = 'Start_Time'
     EXPIRY = 'Expiry'
     TARGET = 'Target'
     SIDE = 'Side'
