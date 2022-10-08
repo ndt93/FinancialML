@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from data_structures.constants import BarCol, EventCol
-from labeling.processing import drop_rare_labels
+from labeling.weighting import drop_rare_labels
 from labeling.triple_barrier import get_event_end_times, get_event_labels
 
 prices = pd.DataFrame({

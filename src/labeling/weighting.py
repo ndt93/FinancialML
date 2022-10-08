@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 from data_structures.constants import EventCol
 
@@ -54,3 +55,47 @@ def compute_label_avg_uniqueness(bars, events):
     for event_start_time, event_end_time in event_end_times.iteritems():
         res.loc[event_start_time] = (1./events_counts.loc[event_start_time:event_end_times]).mean()
     return res
+
+
+# --- Sequential Bootstrap ---
+
+def get_event_indicators(bar_times: pd.DatetimeIndex, event_end_times: pd.Series) -> pd.DataFrame:
+    """
+    :param bar_times: Series of times of bars
+    :param event_end_times: Series of event end times, indexed by event start times
+    :return: DataFrame with 1 column per event, indexed by bar_times. Set to 1 if the event span the bar
+    """
+    res = pd.DataFrame(0, index=bar_times, columns=range(event_end_times.shape[0]))
+    for i, (event_start, event_end) in enumerate(event_end_times.iteritems()):
+        res.loc[event_start:event_end, i] = 1
+    return res
+
+
+def _get_avg_uniqueness(event_indicators: pd.DataFrame) -> pd.Series:
+    """
+    :param event_indicators: see output of _get_event_indicators
+    :return: Series of average uniqueness for each event
+    """
+    concurrency = event_indicators.sum(axis=1)
+    uniqueness = event_indicators.div(concurrency, axis=0)
+    avg_uniqueness = uniqueness[uniqueness > 0].mean()
+    return avg_uniqueness
+
+
+def sample_sequential_boostrap(event_indicators: pd.DataFrame, size=None) -> list:
+    """
+    :param event_indicators: see output of _get_event_indicators
+    :param size: number of samples to be drawn. If None, default to total number of events
+    :return: a list of integer index of sampled events
+    """
+    if size is None:
+        size = event_indicators.shape[1]
+    samples = []
+    while len(samples) < size:
+        trial_avg_uniq = pd.Series()
+        for event_id in event_indicators:
+            trial_event_indicators = event_indicators[samples + [event_id]]
+            trial_avg_uniq.loc[event_id] = _get_avg_uniqueness(trial_event_indicators).iloc[-1]
+        probs = trial_avg_uniq / trial_avg_uniq.sum()
+        samples += [np.random.choice(event_indicators.columns, p=probs)]
+    return samples
