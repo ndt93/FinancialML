@@ -11,13 +11,11 @@ learning researchers, investment portfolio managers or quantitative trading prac
 
 ## Implementation Roadmap [WIP]
 
-Listing of topics I've researched on or implemented as adhoc projects over the years, which are to be
-packaged into this unified library. Most of these tools are currently only available through very
-expensive commercial systems and software.
-Implementations are prioritized by what I use more often for my projects.
-
 This library only provides the tools necessary for academic research or investment strategies design and management and
 not any specific investment/trading models or signals generation.
+Most of these tools are currently only available through very
+expensive commercial systems and software.
+The derivatives and portfolio management tools maybe split into separate projects
 
 ### Financial ML & Statistical Methods
 - Standard & information driven bars sampling
