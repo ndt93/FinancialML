@@ -23,7 +23,7 @@ def drop_rare_labels(events: pd.DataFrame, min_pct=0.05, min_classes=2) -> pd.Da
 
 # --- Weighting by uniqueness ---
 
-def _count_events_per_bar(bar_times: pd.DatetimeIndex, event_end_times: pd.Series) -> pd.Series:
+def count_events_per_bar(bar_times: pd.Index, event_end_times: pd.Series) -> pd.Series:
     """
     Count number of concurrent events in each bar
 
@@ -39,7 +39,7 @@ def _count_events_per_bar(bar_times: pd.DatetimeIndex, event_end_times: pd.Serie
     return res
 
 
-def compute_label_avg_uniqueness(bars, events):
+def compute_label_avg_uniqueness(bars: pd.DataFrame | pd.Series, events):
     """
     At each bar, a label's uniqueness is 1/#concurrent_events. This method find
     the average uniqueness of each label over its event's duration.
@@ -49,21 +49,21 @@ def compute_label_avg_uniqueness(bars, events):
     :return: a Series of average uniqueness for each event, indexed by the event start times
     """
     event_end_times = events[EventCol.END_TIME]
-    events_counts = _count_events_per_bar(bars.index, event_end_times)
+    events_counts = count_events_per_bar(bars.index, event_end_times)
     events_counts = events_counts.loc[~events_counts.index.duplicated(keep='last')]
     events_counts = events_counts.reindex(bars.index).fillna(0)
 
     res = pd.Series(index=event_end_times.index)
     for event_start_time, event_end_time in event_end_times.iteritems():
-        res.loc[event_start_time] = (1./events_counts.loc[event_start_time:event_end_times]).mean()
+        res.loc[event_start_time] = (1./events_counts.loc[event_start_time:event_end_time]).mean()
     return res
 
 
 # --- Sequential Bootstrap ---
 
-def get_event_indicators(bar_times: pd.DatetimeIndex, event_end_times: pd.Series) -> pd.DataFrame:
+def get_event_indicators(bar_times: pd.Series | pd.Index, event_end_times: pd.Series) -> pd.DataFrame:
     """
-    :param bar_times: Series of times of bars
+    :param bar_times: index of times of bars
     :param event_end_times: Series of event end times, indexed by event start times
     :return: DataFrame with 1 column per event, indexed by bar_times. Set to 1 if the event span the bar
     """
@@ -115,8 +115,8 @@ def _get_return_attributions(event_end_times: pd.Series, events_counts: pd.Serie
     returns = np.log(bars).diff()
     weights = pd.Series(index=event_end_times.index)
     for event_start, event_end in event_end_times.iteritems():
-        return_proportions = returns.loc[event_start:event_end] / events_counts.loc[event_start:event_end]
-        weights.loc[event_start] = return_proportions.sum()
+        return_attributed = returns.loc[event_start:event_end] / events_counts.loc[event_start:event_end]
+        weights.loc[event_start] = return_attributed.sum()
     return weights.abs()
 
 

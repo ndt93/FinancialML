@@ -1,8 +1,6 @@
 import pandas as pd
-import pytest
 
 from data_structures.constants import BarCol, EventCol
-from labeling.weighting import drop_rare_labels
 from labeling.triple_barrier import get_event_end_times, get_event_labels
 
 prices = pd.DataFrame({
@@ -113,10 +111,3 @@ def test_get_event_labels_multipliers():
     pd.testing.assert_series_equal(labels[EventCol.RETURN], expected_returns, check_names=False)
     expected_labels = pd.Series([1.0, 1.0, -1.0], index=event_start_times)
     pd.testing.assert_series_equal(labels[EventCol.LABEL], expected_labels, check_names=False)
-
-
-def test_drop_rare_labels():
-    events = pd.DataFrame({EventCol.LABEL: [1]*5 + [2]*150 + [3]*8})
-    filtered_events = drop_rare_labels(events, min_pct=0.05, min_classes=1)
-    label_counts = filtered_events[EventCol.LABEL].value_counts().sort_index()
-    pd.testing.assert_series_equal(label_counts, pd.Series([150, 8], index=[2, 3]), check_names=False)
