@@ -83,8 +83,10 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 ... [TBD]
 
 ### Portfolio Management Toolbox
-- Portfolio optimization using with Markowitz's mean-variance models
+- Portfolio optimization using Markowitz's mean-variance models
+- Bonds portfolio management and hedging tools
 - Market equilibrium models: capital asset pricing model, arbitrage pricing model
+- Portfolio evaluation tools
 
 --- [TBD]
 
