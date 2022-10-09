@@ -21,13 +21,15 @@ def drop_rare_labels(events: pd.DataFrame, min_pct=0.05, min_classes=2) -> pd.Da
     return events
 
 
-def count_events_per_bar(bar_times: pd.DatetimeIndex, event_end_times: pd.Series) -> pd.Series:
+# --- Weighting by uniqueness ---
+
+def _count_events_per_bar(bar_times: pd.DatetimeIndex, event_end_times: pd.Series) -> pd.Series:
     """
     Count number of concurrent events in each bar
 
     :param bar_times: Series of times of bars
     :param event_end_times: Series of event end times, indexed by event start times
-    :return: a Series of concurrent events count index by bar times from the earliest to latest event times
+    :return: a Series of concurrent events count index by bar times from the earliest to the latest event times
     """
     event_end_times = event_end_times.fillna(bar_times[-1])
     event_times_iloc = bar_times.searchsorted([event_end_times.index[0], event_end_times.max()])
@@ -47,7 +49,7 @@ def compute_label_avg_uniqueness(bars, events):
     :return: a Series of average uniqueness for each event, indexed by the event start times
     """
     event_end_times = events[EventCol.END_TIME]
-    events_counts = count_events_per_bar(bars.index, event_end_times)
+    events_counts = _count_events_per_bar(bars.index, event_end_times)
     events_counts = events_counts.loc[~events_counts.index.duplicated(keep='last')]
     events_counts = events_counts.reindex(bars.index).fillna(0)
 
@@ -99,3 +101,61 @@ def sample_sequential_boostrap(event_indicators: pd.DataFrame, size=None) -> lis
         probs = trial_avg_uniq / trial_avg_uniq.sum()
         samples += [np.random.choice(event_indicators.columns, p=probs)]
     return samples
+
+
+# --- Weighting by return attribution ---
+
+def _get_return_attributions(event_end_times: pd.Series, events_counts: pd.Series, bars: pd.Series) -> pd.Series:
+    """
+    :param event_end_times: Series of event end times, indexed by event start times
+    :param events_counts: see output of _count_events_per_bar
+    :param bars: a bars series with DateTimeIndex
+    :return: a Series of unnormalized weights for each event
+    """
+    returns = np.log(bars).diff()
+    weights = pd.Series(index=event_end_times.index)
+    for event_start, event_end in event_end_times.iteritems():
+        return_proportions = returns.loc[event_start:event_end] / events_counts.loc[event_start:event_end]
+        weights.loc[event_start] = return_proportions.sum()
+    return weights.abs()
+
+
+def compute_weights_by_returns(event_end_times: pd.Series, events_counts: pd.Series, bars: pd.Series) -> pd.Series:
+    """
+    Compute the normalized weight for each label/event from the fractions of returns that can be attributed to it.
+    Normalization is done so that the sum of weights add to total number of events.
+
+    :param event_end_times: Series of event end times, indexed by event start times
+    :param events_counts: see output of _count_events_per_bar
+    :param bars: a bars series with DateTimeIndex
+    :return: a Series of normalized weights for each event
+    """
+    raw_weights = _get_return_attributions(event_end_times, events_counts, bars)
+    norm_weights = raw_weights * (raw_weights.shape[0] / raw_weights.sum())
+    return norm_weights
+
+
+# --- Weighting by time decay ---
+
+def apply_time_decay_to_weights(avg_uniqueness: pd.Series, oldest_weight=1.0) -> pd.Series:
+    """
+    Apply piecewise-linear time decay to observed cumulative uniqueness.
+    Weight of the latest observation = 1
+
+    :param avg_uniqueness: Series of average uniqueness. See compute_label_avg_uniqueness
+    :param oldest_weight: weight of the oldest observation.
+        - c = 1: no time decay
+        - 0 < c < 1: weight decays linearly but all event will have some positive weights
+        - c = 0: weight decays linearly to 0
+        - c < 0: the oldest cT portion of the events will have 0 weight
+    :return: a Series of time decayed weights
+    """
+    cum_uniqueness = avg_uniqueness.sort_index().cumsum()
+    if oldest_weight >= 0:
+        slope = (1. - oldest_weight) / cum_uniqueness.iloc[-1]
+    else:
+        slope = 1. / ((oldest_weight + 1) * cum_uniqueness.iloc[-1])
+    const = 1. - slope * cum_uniqueness.iloc[-1]
+    weights = const + slope * cum_uniqueness
+    weights[weights < 0] = 0
+    return weights
