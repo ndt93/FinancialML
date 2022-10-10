@@ -42,3 +42,12 @@ class EventCol:
 
     RETURN = 'Return'
     LABEL = 'Label'
+
+
+class StatsCol:
+    STAT = 'Stat'
+    P_VAL = 'pVal'
+    LAG = 'Lag'
+    NUM_OBS = 'nObs'
+    CONF_95 = '95% Conf'
+    CORR = 'Corr'
