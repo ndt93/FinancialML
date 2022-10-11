@@ -19,18 +19,21 @@ def _get_weights(order: float, size: int) -> np.ndarray:
     return weights
 
 
-def frac_diff_expanding(series: pd.DataFrame, order: float, threshold=0.01):
+def frac_diff_expanding(series: pd.DataFrame, order: float, threshold=1.):
     """
     Apply a standard fractional differencing using expanding window
 
     :param series: a time series of features
     :param order: order of differencing
-    :param threshold: to determine the number of initial points to be skipped. Set to 1 to not skip any data point.
+    :param threshold: Initial data points with weights loss ratio larger than this will be skipped.
+        Value is between 0 and 1. Set to 1 to not skip any data point.
     :return: a fractionally differenced version of the input series
     """
+    assert 0 <= threshold <= 1
     weights = _get_weights(order, series.shape[0])
-    weight_losses = np.cumsum(abs(weights)) / weights[-1]
-    num_skips = weight_losses[weight_losses > threshold].shape[0]
+    weight_losses = np.cumsum(abs(weights))
+    weight_losses /= weight_losses[-1]
+    num_skips = (weight_losses[:-1] > threshold).sum()
     res = {}
 
     for col in series.columns:
@@ -47,7 +50,7 @@ def frac_diff_expanding(series: pd.DataFrame, order: float, threshold=0.01):
     return res
 
 
-def _get_weights_fixed(order: float, threshold: float) -> np.ndarray:
+def _get_weights_fixed(order: float, threshold: float, max_width: int) -> np.ndarray:
     """
     :param order: order of differencing
     :param threshold: discard weights with abs value below this threshold
@@ -55,7 +58,7 @@ def _get_weights_fixed(order: float, threshold: float) -> np.ndarray:
     """
     weights = [1.0]
     k = 1
-    while True:
+    while k < max_width:
         next_w = -weights[-1] * (order - k + 1) / k
         if abs(next_w) < threshold:
             break
@@ -71,10 +74,10 @@ def frac_diff_fixed(series: pd.DataFrame, order: float, threshold=1e-5):
 
     :param series: a time series of features
     :param order: order of differencing
-    :param threshold: to determine the number of weights to be dropped
+    :param threshold: weights with abs value less than this will be dropped
     :return: a fractionally differenced version of the input series 
     """
-    weights = _get_weights_fixed(order, threshold)
+    weights = _get_weights_fixed(order, threshold, series.shape[0])
     width = len(weights) - 1
     res = {}
 
