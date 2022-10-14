@@ -20,27 +20,29 @@ def _get_purged_train_times(event_times: pd.Series, test_times: pd.Series) -> pd
     return train_times
 
 
-def _get_embargo_times(times: np.ndarray | list, embargo_pct: float):
+def _get_embargo_times(bar_times: np.ndarray | list, embargo_pct: float):
     """
     This function should be used before applying purging to remove leakage from test set to train set
     due to serial correlations.
     Each event time interval will be extended by a small interval h and make any train event interval immediately
     follow a test event to be purged.
 
-    :param times: a time Series
-    :param embargo_pct: the times Series will be shifted by forward (embargo_pc * times.shape[0]) number of timestamps
-    :return:
+    :param bar_times: a Series of bar timestamps
+    :param embargo_pct: each timestamp will be shifted forward by (embargo_pc * total_bars) number of bars
+    :return: a Series with mapping from original timestamps (in index) to shifted embargo timestamps (in values)
     """
-    step = int(times.shape[0] * embargo_pct)
+    step = 0 if bar_times is None else int(bar_times.shape[0] * embargo_pct)
     if step == 0:
-        res = pd.Series(times, index=times)
+        res = pd.Series(bar_times, index=bar_times)
     else:
-        res = pd.Series(times[step:], index=times[:-step])
-        res = res.append(pd.Series(times[-1], index=times[-step:]))
+        res = pd.Series(bar_times[step:], index=bar_times[:-step])
+        res = res.append(pd.Series(bar_times[-1], index=bar_times[-step:]))
     return res
 
 
-def apply_purging_and_embargo(event_times: pd.Series, test_times: pd.Series, embargo_pct=0.) -> pd.Series:
+def apply_purging_and_embargo(
+        event_times: pd.Series, test_times: pd.Series, bar_times=None, embargo_pct=0.,
+) -> pd.Series:
     """
     Apply purging and embargo on train set labels that span intervals in a time series.
     - Purge observations in train set whose labels overlap with test set labels
@@ -49,10 +51,13 @@ def apply_purging_and_embargo(event_times: pd.Series, test_times: pd.Series, emb
 
     :param event_times: a Series of event end times indexed by event start times
     :param test_times: a Series of end times for each test period indexed by start times
+    :param bar_times: a Series of bar timestamps. If none, no embargo is applied
+    :param embargo_pct: each timestamp will be shifted forward by (embargo_pc * total_bars) number of bars
     :return: a Series of purged and embargo event_times for the train set
     """
-    embargo_test_times = _get_embargo_times(test_times.values, embargo_pct)
-    train_times = _get_purged_train_times(event_times, embargo_test_times)
+    embargo_times = _get_embargo_times(bar_times, embargo_pct)
+    adj_test_times = pd.Series(embargo_times[test_times].values, index=test_times.index)
+    train_times = _get_purged_train_times(event_times, adj_test_times)
     return train_times
 
 

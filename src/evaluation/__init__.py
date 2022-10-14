@@ -14,7 +14,7 @@ def timeseries_cv_score(
         event_times=None, cv=None, cv_splitter=None, embargo_pct=None
 ):
     """
-    Perform cross validation scoring on time series data. See also: sklearn's cross_val_score
+    Perform cross validation scoring on time series data. See also: sklearn cross_val_score
 
     :param clf: the classifier model
     :param X:
