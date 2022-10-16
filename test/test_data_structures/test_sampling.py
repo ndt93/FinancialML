@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from sampling.filters import filter_symmetric_cumsum
+from events.filters import filter_symmetric_cumsum
 
 
 def test_symmetric_cumsum_filter():

@@ -1,5 +1,5 @@
 """
-This module implements several event-based sampling methods to obtain a subset of bars
+This module implements several filtering methods to obtain a subset of bars
 at which there is a higher likelihood of an actionable event
 """
 import pandas as pd
