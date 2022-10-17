@@ -17,15 +17,15 @@ def timeseries_cv_score(
     Perform cross validation scoring on time series data. See also: sklearn cross_val_score
 
     :param clf: the classifier model
-    :param X:
-    :param y:
-    :param sample_weight:
-    :param scoring:
-    :param event_times:
-    :param cv:
+    :param X: input features DataFrame
+    :param y: label Series
+    :param sample_weight: array of sample weights
+    :param scoring: scoring function name
+    :param event_times: used for PurgedKFold. Can be None if cv_splitter is provided
+    :param cv: number of cv folds
     :param cv_splitter: default to using PurgedKFold if None
     :param embargo_pct: embargo parameter for PurgedKFold
-    :return: an array of score for each CV split
+    :return: an array of score for each CV split. Can be None if cv_splitter is provided
     """
 
     if scoring not in ['neg_log_loss', 'accuracy']:

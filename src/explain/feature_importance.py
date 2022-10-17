@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import log_loss, accuracy_score
 
-from evaluation import Metrics, PurgedKFold
+from evaluation import Metrics, PurgedKFold, timeseries_cv_score
 
 
 def get_mean_decrease_impurity(model, feature_names: list[str]):
@@ -91,3 +91,25 @@ def get_mean_decrease_accuracy(
         'std': importances.std()*importances.shape[0]**-0.5
     }, axis=1)
     return importances, scores.mean()
+
+
+def get_single_feature_importance(features, clf, X, y, sample_weight, scoring, cv_splitter):
+    """
+    Reference implementation of single feature importance (SFI) concept.
+    The model OOS CV score is computed for each feature separately and hence remove the substitution effect
+
+    :param features: list of feature names
+    :param clf: classifier model
+    :param X: input features DataFrame
+    :param scoring: scoring function name
+    :param cv_splitter: CV splitter instance
+    :return: DataFrame of mean and std of cv scores for each feature
+    """
+    importances = pd.DataFrame(columns=['mean', 'std'], dtype=float)
+    for feature in features:
+        scores = timeseries_cv_score(
+           clf, X=X[[feature]], y=y, sample_weight=sample_weight, scoring=scoring, cv_splitter=cv_splitter
+        )
+        importances.loc[feature, 'mean'] = scores.mean()
+        importances.loc[feature, 'std'] = scores.std()*scores.shape[0]**-0.5
+    return importances

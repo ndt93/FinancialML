@@ -2,6 +2,7 @@ import pandas as pd
 from statsmodels.stats.stattools import durbin_watson, jarque_bera
 from statsmodels.tsa.stattools import adfuller
 from scipy.stats import shapiro
+from scipy.stats import kendalltau, weightedtau
 
 
 # Auto-correlation tests
@@ -11,6 +12,15 @@ def pearson_autocorr(series, lag=1):
 
 def durbin_watson_stat(series):
     return durbin_watson(series)
+
+
+# Ordinal/rank correlation tests
+def kendall_tau_pval(x, y):
+    return kendalltau(x, y)[0]
+
+
+def weighted_tau_pval(x, y):
+    return weightedtau(x, y)[0]
 
 
 # Normality tests
