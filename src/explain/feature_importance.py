@@ -27,6 +27,7 @@ def get_mean_decrease_impurity(model, feature_names: list[str]):
         'std': tree_importances.std()*tree_importances.shape[0]**-0.5
     }, axis=1)
     importances /= importances['mean'].sum()
+    return importances
 
 
 def get_mean_decrease_accuracy(
@@ -56,10 +57,10 @@ def get_mean_decrease_accuracy(
 
     for fold, (train_indices, test_indices) in enumerate(cv_splitter.split(X=X)):
         X_train = X.iloc[train_indices, :]
-        y_train = X.iloc[train_indices, :]
+        y_train = y.iloc[train_indices]
         w_train = sample_weight.iloc[train_indices]
         X_test = X.iloc[test_indices, :]
-        y_test = X.iloc[test_indices, :]
+        y_test = y.iloc[test_indices]
         w_test = sample_weight.iloc[test_indices]
 
         clf = clf.fit(X_train, y_train, sample_weight=w_train.values)
