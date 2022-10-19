@@ -23,18 +23,18 @@ def drop_rare_labels(events: pd.DataFrame, min_pct=0.05, min_classes=2) -> pd.Da
 
 # --- Weighting by uniqueness ---
 
-def count_events_per_bar(bar_times: pd.Index, event_end_times: pd.Series) -> pd.Series:
+def count_events_per_bar(bar_times: pd.Index, event_times: pd.Series) -> pd.Series:
     """
     Count number of concurrent events in each bar
 
     :param bar_times: Series of times of bars
-    :param event_end_times: Series of event end times, indexed by event start times
+    :param event_times: Series of event end times, indexed by event start times
     :return: a Series of concurrent events count index by bar times from the earliest to the latest event times
     """
-    event_end_times = event_end_times.fillna(bar_times[-1])
-    event_times_iloc = bar_times.searchsorted([event_end_times.index[0], event_end_times.max()])
+    event_times = event_times.fillna(bar_times[-1])
+    event_times_iloc = bar_times.searchsorted([event_times.index[0], event_times.max()])
     res = pd.Series(0, index=bar_times[event_times_iloc[0]:event_times_iloc[1] + 1])
-    for event_start_time, event_end_time in event_end_times.iteritems():
+    for event_start_time, event_end_time in event_times.iteritems():
         res[event_start_time:event_end_time] += 1
     return res
 
