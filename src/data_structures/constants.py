@@ -19,6 +19,7 @@ class BarCol:
     RET_PRICES = 'rPrice'
     DIVIDEND = 'Dividend'
 
+
 @unique
 class BarUnit(Enum):
     TIME = 1
@@ -42,6 +43,10 @@ class EventCol:
 
     RETURN = 'Return'
     LABEL = 'Label'
+
+
+class PositionCol(EventCol):
+    SIZE = 'size'
 
 
 class StatsCol:
