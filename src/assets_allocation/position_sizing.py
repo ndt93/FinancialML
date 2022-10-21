@@ -5,6 +5,7 @@ from sklearn.mixture import GaussianMixture
 
 from data_structures.constants import EventCol, PositionCol
 from labeling.weighting import count_events_per_bar
+from utils.data import fill_index
 
 
 def compute_gaussian_mixture_position_size(bar_times, event_times, sides, **kwargs):
@@ -23,7 +24,7 @@ def compute_gaussian_mixture_position_size(bar_times, event_times, sides, **kwar
     """
     long_concurrency = count_events_per_bar(bar_times, event_times[sides == 1])
     short_concurrency = count_events_per_bar(bar_times, event_times[sides == -1])
-    concurrency = ((pd.Series(0, index=bar_times) + long_concurrency).fillna(0) - short_concurrency).fillna(0)
+    concurrency = fill_index(bar_times, long_concurrency) - fill_index(bar_times, short_concurrency)
 
     mixture_model = GaussianMixture(n_components=2, covariance_type='spherical', **kwargs)
     mixture_model.fit(concurrency.to_frame('num_pos'))
@@ -51,8 +52,7 @@ def compute_budgeted_position_size(bar_times, event_times, sides, budget_fn=max)
     short_concurrency = count_events_per_bar(bar_times, event_times[sides == -1])
     long_budget = budget_fn(long_concurrency.values)
     short_budget = budget_fn(short_concurrency.values)
-    res = (pd.Series(0, index=bar_times) + long_concurrency/long_budget).fillna(0)
-    res = (res - short_concurrency/short_budget).fillna(0)
+    res = fill_index(bar_times, long_concurrency/long_budget) - fill_index(bar_times, short_concurrency/short_budget)
     return res
 
 
@@ -62,8 +62,8 @@ def _avg_active_positions(positions: pd.DataFrame):
     res = pd.Series(dtype=float)
     for t in position_times:
         is_active = (positions.index.values <= t) & \
-                    ((t < positions[PositionCol.END_TIME]) | pd.isnull(positions[PositionCol.END_TIME]))
-        active_pos_starts = positions[is_active].index
+                    ((t <= positions[PositionCol.END_TIME]) | pd.isnull(positions[PositionCol.END_TIME]))
+        active_pos_starts = positions[is_active].index.drop_duplicates()
         if len(active_pos_starts) > 0:
             res[t] = positions.loc[active_pos_starts, PositionCol.SIZE].mean()
         else:
@@ -79,17 +79,31 @@ def _discretize_position_sizes(sizes, step_size):
 
 
 def compute_position_size_from_probabilities(
-        events: pd.DataFrame, step_size, prob: pd.Series, pred: pd.Series, num_classes: int, **kwargs
-):
+        events: pd.DataFrame, step_size, prob: pd.Series, pred: pd.Series, num_classes: int
+) -> pd.Series:
+    """
+    Size positions by the model's predicted probabilities p of each event.
+    Using the test statistic: z = (p - 1/num_cls)/sqrt(p(1 - p)): size = pred_cls * (2 * F(z) - 1)
+    Concurrent position sizes are averaged and discretized using step_size
+
+    :param events: DataFrame with EventCol.END_TIME and optionally EventCol.SIDE
+    :param step_size: step used to discretize position sizes
+    :param prob: Series of predicted probabilities of each event. Should have same index as events
+    :param pred: Series of class prediction of each event. Should have same index as events
+    :param num_classes: Number of classification clasess
+    :return: a Series of position sizes between -1 and 1 at all events start times and end_times
+    """
+
     if prob.shape[0] == 0:
         return pd.Series(dtype=float)
 
     test_stats = (prob - 1./num_classes)/(prob * (1. - prob))**0.5
     sizes = pred * (2*norm.cdf(test_stats) - 1)
     if EventCol.SIDE in events.columns:
-        sizes *= events.loc[sizes.index, EventCol.SIDE]
+        sizes = sizes * events[EventCol.SIDE]
 
-    positions = sizes.to_frame(PositionCol.SIZE).join(events[[EventCol.END_TIME]], how='left')
+    positions = sizes.to_frame(PositionCol.SIZE)
+    positions[EventCol.END_TIME] = events[EventCol.END_TIME]
     sizes = _avg_active_positions(positions)
     res = _discretize_position_sizes(sizes, step_size=step_size)
     return res
@@ -104,11 +118,11 @@ def _inverse_price(f, w, m):
     return f - m*(w/(1 - m**2))**.5
 
 
-def _get_sigmoid_scale(x, m):
+def get_sigmoid_coeff(x, m):
     return x**2 * (m**-2 - 1)
 
 
-def compute_position_size_from_divergence(forcast, market_price, max_size, w):
+def compute_position_size_from_divergence(forecast, market_price, max_size, w):
     """
     Size positions dynamically based on the divergence between forecasted price and market price.
     size_i_t = int[m(w, forecast_i - mkPrice_t) * max_size]
@@ -118,13 +132,13 @@ def compute_position_size_from_divergence(forcast, market_price, max_size, w):
     Use compute_limit_price function to get the limit for the order to change from current position size
     to the new target position size
 
-    :param forcast: the forecast price
+    :param forecast: the forecast price
     :param market_price: the market price
     :param max_size: maximum position size
     :param w: scaling coefficient for the sigmoid function
     :return: position sizes from -max_size to max_size
     """
-    return int(_scaled_sigmoid(w, forcast - market_price)*max_size)
+    return int(_scaled_sigmoid(w, forecast - market_price) * max_size)
 
 
 def compute_limit_price(cur_pos, target_pos, max_position, forecast, w):

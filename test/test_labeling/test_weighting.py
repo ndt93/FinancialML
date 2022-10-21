@@ -62,9 +62,9 @@ def test_compute_weights_by_returns(data_sample):
     events = data_sample['events']
     bars = data_sample['bars']
 
-    event_end_times = events[EventCol.END_TIME]
-    events_counts = count_events_per_bar(bars.index, event_end_times)
-    weights_by_ret = compute_weights_by_returns(event_end_times, events_counts, bars[BarCol.CLOSE])
+    event_times = events[EventCol.END_TIME]
+    events_counts = count_events_per_bar(bars.index, event_times)
+    weights_by_ret = compute_weights_by_returns(event_times, events_counts, bars[BarCol.CLOSE])
     np.testing.assert_array_almost_equal([0.9, 0.9, 1.2], weights_by_ret.values)
 
 

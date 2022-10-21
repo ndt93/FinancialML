@@ -48,27 +48,29 @@ def compute_label_avg_uniqueness(bars: pd.DataFrame | pd.Series, events):
     :param events: a DataFrame of [EventCol.END_TIMES] and DateTimeIndex
     :return: a Series of average uniqueness for each event, indexed by the event start times
     """
-    event_end_times = events[EventCol.END_TIME]
-    events_counts = count_events_per_bar(bars.index, event_end_times)
+    event_times = events[EventCol.END_TIME]
+    events_counts = count_events_per_bar(bars.index, event_times)
     events_counts = events_counts.loc[~events_counts.index.duplicated(keep='last')]
     events_counts = events_counts.reindex(bars.index).fillna(0)
 
-    res = pd.Series(index=event_end_times.index)
-    for event_start_time, event_end_time in event_end_times.iteritems():
+    res = pd.Series(index=event_times.index)
+    for event_start_time, event_end_time in event_times.iteritems():
         res.loc[event_start_time] = (1./events_counts.loc[event_start_time:event_end_time]).mean()
     return res
 
 
 # --- Sequential Bootstrap ---
 
-def get_event_indicators(bar_times: pd.Series | pd.Index, event_end_times: pd.Series) -> pd.DataFrame:
+def get_event_indicators(bar_times: pd.Series | pd.Index, event_times: pd.Series) -> pd.DataFrame:
     """
+    Get a matrix (# bars, # events) that indicates whether each event is happening at each bar
+
     :param bar_times: index of times of bars
-    :param event_end_times: Series of event end times, indexed by event start times
+    :param event_times: Series of event end times, indexed by event start times
     :return: DataFrame with 1 column per event, indexed by bar_times. Set to 1 if the event span the bar
     """
-    res = pd.DataFrame(0, index=bar_times, columns=range(event_end_times.shape[0]))
-    for i, (event_start, event_end) in enumerate(event_end_times.iteritems()):
+    res = pd.DataFrame(0, index=bar_times, columns=range(event_times.shape[0]))
+    for i, (event_start, event_end) in enumerate(event_times.iteritems()):
         res.loc[event_start:event_end, i] = 1
     return res
 
@@ -86,6 +88,8 @@ def _get_avg_uniqueness(event_indicators: pd.DataFrame) -> pd.Series:
 
 def sample_sequential_boostrap(event_indicators: pd.DataFrame, size=None) -> list:
     """
+    Sample overlapping events such that more unique events have higher probabilities of being sampled
+
     :param event_indicators: see output of _get_event_indicators
     :param size: number of samples to be drawn. If None, default to total number of events
     :return: a list of integer index of sampled events
@@ -105,32 +109,32 @@ def sample_sequential_boostrap(event_indicators: pd.DataFrame, size=None) -> lis
 
 # --- Weighting by return attribution ---
 
-def _get_return_attributions(event_end_times: pd.Series, events_counts: pd.Series, bars: pd.Series) -> pd.Series:
+def _get_return_attributions(event_times: pd.Series, events_counts: pd.Series, bars: pd.Series) -> pd.Series:
     """
-    :param event_end_times: Series of event end times, indexed by event start times
+    :param event_times: Series of event end times, indexed by event start times
     :param events_counts: see output of _count_events_per_bar
     :param bars: a bars series with DateTimeIndex
     :return: a Series of unnormalized weights for each event
     """
     returns = np.log(bars).diff()
-    weights = pd.Series(index=event_end_times.index)
-    for event_start, event_end in event_end_times.iteritems():
+    weights = pd.Series(index=event_times.index)
+    for event_start, event_end in event_times.iteritems():
         return_attributed = returns.loc[event_start:event_end] / events_counts.loc[event_start:event_end]
         weights.loc[event_start] = return_attributed.sum()
     return weights.abs()
 
 
-def compute_weights_by_returns(event_end_times: pd.Series, events_counts: pd.Series, bars: pd.Series) -> pd.Series:
+def compute_weights_by_returns(event_times: pd.Series, events_counts: pd.Series, bars: pd.Series) -> pd.Series:
     """
     Compute the normalized weight for each label/event from the fractions of returns that can be attributed to it.
     Normalization is done so that the sum of weights add to total number of events.
 
-    :param event_end_times: Series of event end times, indexed by event start times
+    :param event_times: Series of event end times, indexed by event start times
     :param events_counts: see output of _count_events_per_bar
     :param bars: a bars series with DateTimeIndex
     :return: a Series of normalized weights for each event
     """
-    raw_weights = _get_return_attributions(event_end_times, events_counts, bars)
+    raw_weights = _get_return_attributions(event_times, events_counts, bars)
     norm_weights = raw_weights * (raw_weights.shape[0] / raw_weights.sum())
     return norm_weights
 
