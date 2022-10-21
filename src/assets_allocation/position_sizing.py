@@ -56,6 +56,7 @@ def compute_budgeted_position_size(bar_times, event_times, sides, budget_fn=max)
     return res
 
 
+# Size positions using ML model's probabilities and prediction
 def _avg_active_positions(positions: pd.DataFrame):
     position_times = positions.index.union(positions[PositionCol.END_TIME].values).dropna().drop_duplicates()
     res = pd.Series(dtype=float)
@@ -92,3 +93,55 @@ def compute_position_size_from_probabilities(
     sizes = _avg_active_positions(positions)
     res = _discretize_position_sizes(sizes, step_size=step_size)
     return res
+
+
+# Dynamic position sizing from divergence between forecasts and market prices
+def _scaled_sigmoid(w, x):
+    return x * (w + x ** 2) ** -0.5
+
+
+def _inverse_price(f, w, m):
+    return f - m*(w/(1 - m**2))**.5
+
+
+def _get_sigmoid_scale(x, m):
+    return x**2 * (m**-2 - 1)
+
+
+def compute_position_size_from_divergence(forcast, market_price, max_size, w):
+    """
+    Size positions dynamically based on the divergence between forecasted price and market price.
+    size_i_t = int[m(w, forecast_i - mkPrice_t) * max_size]
+    m(w, x) = x^2/sqrt(w + x^2) is a sigmoid function with scaling coefficient w.
+        Supports for other functions will be implemented in the future.
+
+    Use compute_limit_price function to get the limit for the order to change from current position size
+    to the new target position size
+
+    :param forcast: the forecast price
+    :param market_price: the market price
+    :param max_size: maximum position size
+    :param w: scaling coefficient for the sigmoid function
+    :return: position sizes from -max_size to max_size
+    """
+    return int(_scaled_sigmoid(w, forcast - market_price)*max_size)
+
+
+def compute_limit_price(cur_pos, target_pos, max_position, forecast, w):
+    """
+    Compute the break-even limit price for the order to change from the current position to
+    target position (using the compute_position_size_from_divergence function).
+
+    :param cur_pos: current position sizes
+    :param target_pos: target position sizes
+    :param max_position: max position size
+    :param forecast: forecasted price
+    :param w: regulating coefficient for the sigmoid function
+    :return: the limit price for the order
+    """
+    sign = 1 if target_pos > cur_pos else -1
+    limit_price = 0
+    for j in range(abs(cur_pos + sign), abs(target_pos + 1)):
+        limit_price += _inverse_price(forecast, w, j/float(max_position))
+    limit_price /= target_pos - cur_pos
+    return limit_price

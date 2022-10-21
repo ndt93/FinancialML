@@ -30,7 +30,7 @@ The derivatives and portfolio management tools maybe split into separate project
   - Mean decrease impurity
   - Mean decrease accuracy
 - Backtesting
-  - Bet sizing
+  - Strategy-independent position sizing
   - Walk-forward
   - Combinatorial purged CV
   - Synthetic data backtest
