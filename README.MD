@@ -30,7 +30,7 @@ The derivatives and portfolio management tools maybe split into separate project
   - Mean decrease impurity
   - Mean decrease accuracy
 - Backtesting
-  - Bet sizing
+  - Strategy-independent position sizing
   - Walk-forward
   - Combinatorial purged CV
   - Synthetic data backtest
@@ -102,3 +102,4 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 * L´opez de Prado, M. (2015): “The Future of Empirical Finance.” Journal of Portfolio Management, Vol. 41, No. 4, pp. 140–144.
 * Jones, M.,M. Nielsen andM. Popiel (2015): “A fractionally cointegrated VAR analysis of economic voting and political support.” Canadian Journal of Economics, Vol. 47, No. 4, pp. 1078–1130.
 * Cavaliere, G., M. Nielsen, and A. Taylor (2017): “Quasi-maximum likelihood estimation and bootstrap inference in fractional time series models with heteroskedasticity of unknown form.” Journal of Econometrics, Vol. 198, No. 1, pp. 165–188.
+* Lo ́pez de Prado, M. and M. Foreman (2014): “A mixture of Gaussians approach to mathematical portfolio oversight: The EF3M algorithm.” Quantitative Finance, Vol. 14, No. 5, pp. 913–930.
