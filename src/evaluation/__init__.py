@@ -54,3 +54,12 @@ def timeseries_cv_score(
         scores.append(split_score)
 
     return np.array(scores)
+
+
+def sharpe_ratio(returns_series: np.ndarray, axis=None):
+    """
+    :param returns_series: array of returns or other performance metrics e.g. PnL
+    :param axis: calculate sharpe ration along this axis
+    :return: Sharpe ratio
+    """
+    return np.mean(returns_series, axis=axis)/np.std(returns_series, axis=axis)

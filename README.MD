@@ -103,3 +103,5 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 * Jones, M.,M. Nielsen andM. Popiel (2015): “A fractionally cointegrated VAR analysis of economic voting and political support.” Canadian Journal of Economics, Vol. 47, No. 4, pp. 1078–1130.
 * Cavaliere, G., M. Nielsen, and A. Taylor (2017): “Quasi-maximum likelihood estimation and bootstrap inference in fractional time series models with heteroskedasticity of unknown form.” Journal of Econometrics, Vol. 198, No. 1, pp. 165–188.
 * Lo ́pez de Prado, M. and M. Foreman (2014): “A mixture of Gaussians approach to mathematical portfolio oversight: The EF3M algorithm.” Quantitative Finance, Vol. 14, No. 5, pp. 913–930.
+* Bailey, D., J. Borwein, and M. L´opez de Prado (2016): “Stock portfolio design and backtest overfitting.” Journal of Investment Management, Vol. 15, No. 1, pp. 1–13. Available at https://ssrn.com/abstract=2739335.
+* Bailey, D., J. Borwein, A. Salehipour, and M. L´opez de Prado (2017): “Evaluation and ranking of market forecasters.” Journal of Investment Management, forthcoming. Available at https://ssrn.com/abstract=2944853.

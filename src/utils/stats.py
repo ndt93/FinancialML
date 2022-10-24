@@ -1,8 +1,7 @@
 import pandas as pd
 from statsmodels.stats.stattools import durbin_watson, jarque_bera
 from statsmodels.tsa.stattools import adfuller
-from scipy.stats import shapiro
-from scipy.stats import kendalltau, weightedtau
+from scipy.stats import shapiro, rv_continuous, kendalltau, weightedtau
 
 
 # Auto-correlation tests
@@ -35,3 +34,14 @@ def shapiro_wilk_pval(series):
 # Stationarity test
 def augmented_dickey_fuller_pval(series, **kwargs):
     return adfuller(series, **kwargs)[1]
+
+
+# Scipy's rv_continuous class from a KDE estimation
+class KDEDist(rv_continuous):
+
+    def __init__(self, kde, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._kde = kde
+
+    def _pdf(self, x, *args):
+        return self._kde.pdf(x)
