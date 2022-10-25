@@ -5,7 +5,8 @@ from sklearn.model_selection._split import _BaseKFold
 
 def _get_purged_train_times(event_times: pd.Series, test_times: pd.Series) -> pd.Series:
     """
-    Remove any event time interval that overlaps with test time intervals to form a training set
+    Remove any event time interval that overlaps with test time intervals to form a training set.
+    Events are assumed to be uniquely identified by their start times.
 
     :param event_times: a Series of event end times indexed by event start times
     :param test_times: a Series of end times for each test period indexed by start times
@@ -27,7 +28,7 @@ def _get_embargo_times(bar_times: np.ndarray | list, embargo_pct: float):
     Each event time interval will be extended by a small interval h and make any train event interval immediately
     follow a test event to be purged.
 
-    :param bar_times: a Series of bar timestamps
+    :param bar_times: an array of bar timestamps
     :param embargo_pct: each timestamp will be shifted forward by (embargo_pc * total_bars) number of bars
     :return: a Series with mapping from original timestamps (in index) to shifted embargo timestamps (in values)
     """
@@ -48,10 +49,11 @@ def apply_purging_and_embargo(
     - Purge observations in train set whose labels overlap with test set labels
     - Embargo: Drop a portion of observations at the start of train set that follows a test set to prevent
         leakage from serial correlations
+    Events are assumed to be uniquely identified by their start times.
 
     :param event_times: a Series of event end times indexed by event start times
     :param test_times: a Series of end times for each test period indexed by start times
-    :param bar_times: a Series of bar timestamps. If none, no embargo is applied
+    :param bar_times: an array of bar timestamps. If none, no embargo is applied
     :param embargo_pct: each timestamp will be shifted forward by (embargo_pc * total_bars) number of bars
     :return: a Series of purged and embargo event_times for the train set
     """
@@ -64,13 +66,14 @@ def apply_purging_and_embargo(
 class PurgedKFold(_BaseKFold):
     """
     Perform KFold splitting on time series for cross validation, supporting labels that span across intervals.
-    Purge observations in train set with labels that overlap with test set's labels
-    Assume test set is contiguous (no training samples in between) i.e. shuffle = False
+    Purge observations in train set with labels that overlap with test set's labels.
+    Assume test set is contiguous (no training samples in between) i.e. shuffle = False and
+    events are assumed to be uniquely identified by their start times.
     """
 
     def __init__(self, n_splits=3, event_times: pd.Series=None, embargo_pct=0.):
         """
-        :param n_splits:
+        :param n_splits: number of k-fold splits
         :param event_times: a Series of event end times indexed by event start time.
             An event defines the interval that each label spans
         :param embargo_pct: Used to prevent leakage from serial correlation. see apply_purging_and_embargo function
