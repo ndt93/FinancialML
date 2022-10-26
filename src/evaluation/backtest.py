@@ -95,7 +95,7 @@ class CombinatorialPurgedCV:
             test_times = self._event_times.iloc[test_indices]
 
             train_times = apply_purging_and_embargo(self._event_times, test_times, self._bar_times, self._embargo_pct)
-            train_indices = self._event_times.index.searchsorted(train_times)
+            train_indices = self._event_times.index.searchsorted(train_times.index)
 
             for g in test_grps:
                 self._split_of_test_group[g].append(split_idx)
@@ -110,7 +110,7 @@ class CombinatorialPurgedCV:
         for i in range(num_paths):
             path_splits = [l[i] for l in self._split_of_test_group]
             test_indices = list(
-                range(int(g*self._group_size), int((g+1)*self._group_size))
+                list(range(int(g*self._group_size), int((g+1)*self._group_size)))
                 for g in range(self._n_groups)
             )
-            yield zip(test_indices, path_splits)
+            yield list(zip(test_indices, path_splits))
