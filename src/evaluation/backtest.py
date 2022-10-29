@@ -4,8 +4,8 @@ import numpy as np
 from scipy.stats import gaussian_kde
 import pandas as pd
 
-from evaluation import sharpe_ratio
-from evaluation.purged_cv import apply_purging_and_embargo
+from evaluation.metrics import sharpe_ratio
+from evaluation.cross_validation import apply_purging_and_embargo
 from utils.stats import KDEDist
 
 
