@@ -23,8 +23,6 @@ def get_position_timings(positions: pd.Series):
     res = no_pos_times.intersection(prev_pos)
     flips = positions.iloc[1:]*positions.iloc[:-1].values
     res = res.union(flips[flips < 0].index).sort_values()
-    if positions.index[-1] not in res:
-        res.append(positions.index[-1:])
     return res
 
 
@@ -89,28 +87,31 @@ def compute_hhi_returns_concentration(returns):
         return np.nan, np.nan
     pos_rets = returns[returns >= 0]
     neg_rets = returns[returns < 0]
-    return _get_hhi(pos_rets), _get_hhi(neg_rets)
+    pos_hhi = np.nan if pos_rets.shape[0] == 0 else _get_hhi(pos_rets)
+    neg_hhi = np.nan if neg_rets.shape[0] == 0 else _get_hhi(neg_rets)
+    return pos_hhi, neg_hhi
 
 
-def compute_dd_and_tuw(returns, dollars=False):
+def compute_dd_and_tuw(returns: pd.Series, dollars=False):
     """
-    Compute the draw down and time underwater metrics from a series of return or PnL dollar performance
+    Compute the draw down and time underwater metrics from a series of returns or dollar values.
+    The last data point will be ignored.
 
-    :param returns: series of returns or dollar PnL
-    :param dollars: set to True if returns are in dollar PnL
-    :return: drawdown i.e. maximum loss between 2 consecutive high-watermarks
+    :param returns: series of returns or dollar values
+    :param dollars: set to True if returns are in dollar values
+    :return: drawdown, time underwater in days
     """
     df0 = returns.to_frame('pnl')
     df0['hwm'] = returns.expanding().max()
     df1 = df0.groupby('hwm').min().reset_index()
     df1.columns = ['hwm', 'min']
-    df1.index = df0['hwm'].drop_duplicates(kee='first').index
+    df1.index = df0['hwm'].drop_duplicates(keep='first').index
     df1 = df1[df1['hwm'] > df1['min']]
     if dollars:
         dd = df1['hwm'] - df1['min']
     else:
         dd = 1. - df1['min']/df1['hwm']
-    tuw = (df1.index[1:] - df1.index[:-1])/pd.Timedelta(1, 'Y').values
+    tuw = ((df1.index[1:] - df1.index[:-1])/pd.Timedelta(1, 'D')).values
     tuw = pd.Series(tuw, index=df1.index[:-1])
     return dd, tuw
 
@@ -153,7 +154,7 @@ def deflated_sharpe_ratio(returns: np.ndarray, axis=0):
     ratio is the expected maximum of the estimated Sharpe ratio
 
     :param returns: series of returns for multiple trials
-    :param axis: 0 if each trial's returns occupy 1 column. 1 if it's 1 row per trial
+    :param axis: 0 if each trial's returns occupies 1 column. 1 if it's 1 row per trial
     :return: (deflated Sharpe ratio, benchmark Sharpe ratio)
     """
     sharpe_ratios = sharpe_ratio(returns, axis=axis)

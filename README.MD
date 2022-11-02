@@ -35,6 +35,8 @@ The derivatives and portfolio management tools maybe split into separate project
   - Combinatorial purged CV
   - Synthetic data backtest
 - Evaluation methods & metrics
+  - Backtest metrics
+  - Attribution
 - Strategy risks
 - Assets allocation
   - Hierarchical Risk Parity
@@ -107,3 +109,7 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 * Bailey, D., J. Borwein, A. Salehipour, and M. L´opez de Prado (2017): “Evaluation and ranking of market forecasters.” Journal of Investment Management, forthcoming. Available at https://ssrn.com/abstract=2944853.
 * Bailey, D. and M. Lo ́pez de Prado (2014): “The deflated Sharpe ratio: Correcting for selection bias, backtest overfitting and non-normality.” Journal of Portfolio Management, Vol. 40, No. 5, pp. 94–107. Available at https://ssrn.com/abstract=2460551.
 * Bailey, D., J. Borwein, M. Lo ́pez de Prado, and J. Zhu (2014): “Pseudo-mathematics and financial charlatanism: The effects of backtest overfitting on out-of-sample performance.” Notices of the American Mathematical Society, Vol. 61, No. 5, pp. 458–471. Available at http://ssrn .com/abstract=2308659.
+* Bailey, D. and M. Lo ́pez de Prado (2012): “The Sharpe ratio efficient frontier.” Journal of Risk, Vol. 15, No. 2, pp. 3–44.
+* Barra (2013): MSCI BARRA Factor Indexes Methodology, 1st ed. MSCI Barra. Avail- able at https://www.msci.com/eqb/methodology/meth_docs/MSCI_Barra_Factor%20Indices_ Methodology_Nov13.pdf .
+* CFA Institute (2010): “Global investment performance standards.” CFA Institute, Vol. 2010, No. 4, February. Available at https://www.gipsstandards.org/.
+* Zhang, Y. and S. Rachev (2004): “Risk attribution and portfolio performance measurement— An overview.” Working paper, University of California, Santa Barbara. Available at http:// citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.318.7169.
