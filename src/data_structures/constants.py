@@ -46,7 +46,7 @@ class EventCol:
 
 
 class PositionCol(EventCol):
-    SIZE = 'size'
+    SIZE = 'Size'
 
 
 class StatsCol:
@@ -56,3 +56,8 @@ class StatsCol:
     NUM_OBS = 'nObs'
     CONF_95 = '95% Conf'
     CORR = 'Corr'
+
+
+class PortfolioCol:
+    BEGIN_VALUE = 'BeginValue'
+    CASHFLOW = 'Cashflow'

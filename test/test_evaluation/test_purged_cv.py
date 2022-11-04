@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import pandas as pd
 
-from evaluation.purged_cv import apply_purging_and_embargo, PurgedKFold
+from evaluation.cross_validation import apply_purging_and_embargo, PurgedKFold
 
 days = pd.DatetimeIndex([datetime(year=2022, month=1, day=i) for i in range(1, 32)])
 

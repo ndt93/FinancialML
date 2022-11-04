@@ -4,7 +4,8 @@ from sklearn.datasets import make_classification
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import BaggingClassifier
 
-from evaluation import timeseries_cv_score, PurgedKFold
+from evaluation import PurgedKFold
+from evaluation.cross_validation import timeseries_cv_score
 from explain.feature_importance import (
     get_mean_decrease_impurity,
     get_mean_decrease_accuracy,
