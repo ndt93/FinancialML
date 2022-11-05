@@ -1,7 +1,11 @@
 import numpy as np
+import pandas as pd
+from scipy.stats import norm
+
+from utils.simulation import generate_mixed_gaussians
 
 
-def get_strategy_sharpe_ratio(p, freq, profit, loss):
+def strategy_sharpe_ratio(p, freq, profit, loss):
     """
     Get the expected Sharpe ratio for a strategy with a binomial probability of outcomes
 
@@ -16,7 +20,7 @@ def get_strategy_sharpe_ratio(p, freq, profit, loss):
     return numer/denom*freq**.5
 
 
-def get_strategy_required_precision(target_sr, freq, profit, loss):
+def strategy_required_precision(target_sr, freq, profit, loss):
     """
     Get the required precision for a target Sharpe ratio
 
@@ -33,7 +37,7 @@ def get_strategy_required_precision(target_sr, freq, profit, loss):
     return p
 
 
-def get_strategy_required_freq(target_sr, p, profit, loss):
+def strategy_required_freq(target_sr, p, profit, loss):
     """
     Get the required bets frequency for a target Sharpe ratio
 
@@ -44,6 +48,44 @@ def get_strategy_required_freq(target_sr, p, profit, loss):
     :return: the expected Sharpe ratio
     """
     freq = (target_sr*(profit-loss))**2*p*(1-p)/((profit-loss)*p + loss)**2
-    if not np.isclose(get_strategy_sharpe_ratio(p, freq, profit, loss), target_sr):
+    if not np.isclose(strategy_sharpe_ratio(p, freq, profit, loss), target_sr):
         return None
     return freq
+
+
+def strategy_probability_of_failure(returns: pd.Series | np.ndarray, freq: int, target_sr: float):
+    """
+    Calculate the probability that a strategy fail to achieve the target Sharpe ratio in the long run
+
+    :param returns:
+    :param freq:
+    :param target_sr:
+    :return:
+    """
+    pos_ret = returns[returns > 0]
+    mean_pos_ret = pos_ret.mean()
+    mean_neg_ret = returns[returns <= 0].mean()
+    p = pos_ret.shape[0]/float(returns.shape[0])
+    p_thresh = strategy_required_precision(target_sr, freq, mean_pos_ret, mean_neg_ret)
+    risk = norm.cdf(p_thresh, p, p*(1-p))
+    return risk
+
+
+def simulate_strategy_probability_of_failure(mu1, mu2, sigma1, sigma2, prob1, n_samples, freq, target_sr):
+    """
+    A reference implementation for estimating a strategy probability of failure by drawing returns
+    from a gaussian mixture distribution
+
+    :param mu1: mean of the 1st Gaussian in the return distribution
+    :param mu2: mean of the 2nd Gaussian in the return distribution
+    :param sigma1: std of the 1st Gaussian in the return distribution
+    :param sigma2: std of the 2nd Gaussian in the return distribution
+    :param prob1: probability of drawing from the 1st gaussian
+    :param n_samples: number of samples
+    :param freq: number of positions taken by the strategy a year
+    :param target_sr: the target Sharpe ratio
+    :return: strategy risk/probability of failure
+    """
+    returns = generate_mixed_gaussians(mu1, mu2, sigma1, sigma2, prob1, n_samples)
+    prob_failure = strategy_probability_of_failure(returns, freq, target_sr)
+    return prob_failure
