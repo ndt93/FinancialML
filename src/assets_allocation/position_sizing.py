@@ -8,7 +8,7 @@ from labeling.weighting import count_events_per_bar
 from utils.data import fill_index
 
 
-def compute_gaussian_mixture_position_size(bar_times, event_times, sides, **kwargs):
+def gaussian_mixture_position_size(bar_times, event_times, sides, **kwargs):
     """
     Size position using the cumulative distribution of number of concurrent positions, defined as
     c_t = c_t_long - c_t_short. The distribution is modeled using a mixture of 2 Gaussians.
@@ -36,7 +36,7 @@ def compute_gaussian_mixture_position_size(bar_times, event_times, sides, **kwar
     return pd.Series(res, index=concurrency.index)
 
 
-def compute_budgeted_position_size(bar_times, event_times, sides, budget_fn=max):
+def budgeted_position_size(bar_times, event_times, sides, budget_fn=max):
     """
     Size position using a certain budget function e.g. max or some quantile of number of concurrent long/short
     positions. position_size_t = c_t_l/budget_fn([c_i_l]) - c_t_s/budget_fn([c_i_s])
@@ -78,7 +78,7 @@ def _discretize_position_sizes(sizes, step_size):
     return discrete_sizes
 
 
-def compute_position_size_from_probabilities(
+def position_size_from_probabilities(
         events: pd.DataFrame, step_size, prob: pd.Series, pred: pd.Series, num_classes: int
 ) -> pd.Series:
     """
@@ -122,7 +122,7 @@ def get_sigmoid_coeff(x, m):
     return x**2 * (m**-2 - 1)
 
 
-def compute_position_size_from_divergence(forecast, market_price, max_size, w):
+def position_size_from_divergence(forecast, market_price, max_size, w):
     """
     Size positions dynamically based on the divergence between forecasted price and market price.
     size_i_t = int[m(w, forecast_i - mkPrice_t) * max_size]

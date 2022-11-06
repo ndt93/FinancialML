@@ -38,3 +38,11 @@ def generate_discrete_ou_process(forecast, half_life, sigma, seed, num_steps):
     for _ in range(num_steps):
         p = (1 - phi)*forecast + phi*p + sigma*norm.rvs()
         yield p
+
+
+def generate_mixed_gaussians(mu1, mu2, sigma1, sigma2, prob1, n_samples):
+    ret1 = np.random.normal(mu1, sigma1, size=int(n_samples*prob1))
+    ret2 = np.random.normal(mu2, sigma2, size=int(n_samples) - ret1.shape[0])
+    ret = np.append(ret1, ret2, axis=0)
+    np.random.shuffle(ret)
+    return ret

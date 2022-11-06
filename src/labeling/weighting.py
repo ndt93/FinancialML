@@ -39,7 +39,7 @@ def count_events_per_bar(bar_times: pd.Index, event_times: pd.Series) -> pd.Seri
     return res
 
 
-def compute_label_avg_uniqueness(bars: pd.DataFrame | pd.Series, events):
+def label_avg_uniqueness(bars: pd.DataFrame | pd.Series, events):
     """
     At each bar, a label's uniqueness is 1/#concurrent_events. This method find
     the average uniqueness of each label over its event's duration.
