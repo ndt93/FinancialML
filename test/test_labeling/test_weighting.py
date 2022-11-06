@@ -7,7 +7,7 @@ import numpy as np
 from data_structures.constants import EventCol, BarCol
 from labeling.weighting import (
     drop_rare_labels,
-    compute_label_avg_uniqueness,
+    label_avg_uniqueness,
     get_event_indicators,
     sample_sequential_boostrap,
     count_events_per_bar,
@@ -39,10 +39,10 @@ def data_sample():
     }
 
 
-def test_compute_label_avg_uniqueness(data_sample):
+def test_label_avg_uniqueness(data_sample):
     events = data_sample['events']
     bars = data_sample['bars']
-    avg_uniqueness = compute_label_avg_uniqueness(bars, events)
+    avg_uniqueness = label_avg_uniqueness(bars, events)
     expected = pd.Series([0.833, 0.75, 1.0], index=events.index)
     pd.testing.assert_series_equal(avg_uniqueness, expected, check_less_precise=2)
 
@@ -71,7 +71,7 @@ def test_compute_weights_by_returns(data_sample):
 def test_apply_time_decay_to_weights(data_sample):
     events = data_sample['events']
     bars = data_sample['bars']
-    avg_uniqueness = compute_label_avg_uniqueness(bars, events)
+    avg_uniqueness = label_avg_uniqueness(bars, events)
     print()
 
     time_decay_weights = apply_time_decay_to_weights(avg_uniqueness, oldest_weight=1.)

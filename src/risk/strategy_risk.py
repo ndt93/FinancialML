@@ -66,8 +66,9 @@ def strategy_probability_of_failure(returns: pd.Series | np.ndarray, freq: int, 
     mean_pos_ret = pos_ret.mean()
     mean_neg_ret = returns[returns <= 0].mean()
     p = pos_ret.shape[0]/float(returns.shape[0])
+    print(mean_pos_ret, mean_neg_ret, p)
     p_thresh = strategy_required_precision(target_sr, freq, mean_pos_ret, mean_neg_ret)
-    risk = norm.cdf(p_thresh, p, p*(1-p))
+    risk = norm.cdf(p_thresh, p, p*(1-p))  # Use bootstrap if number of samples is small
     return risk
 
 

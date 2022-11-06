@@ -4,12 +4,12 @@ import pandas as pd
 from scipy.stats import norm
 
 from assets_allocation.position_sizing import (
-    compute_gaussian_mixture_position_size,
+    gaussian_mixture_position_size,
     get_sigmoid_coeff,
-    compute_position_size_from_divergence,
+    position_size_from_divergence,
     compute_limit_price,
-    compute_budgeted_position_size,
-    compute_position_size_from_probabilities
+    budgeted_position_size,
+    position_size_from_probabilities
 )
 from data_structures.constants import EventCol
 from labeling.weighting import count_events_per_bar, get_event_indicators
@@ -42,7 +42,7 @@ def test_gaussian_mixture_position_size(bar_times, event_times, sides):
     events_s = count_events_per_bar(bar_times, event_times[sides == -1])
     net_events = ((pd.Series(0, index=bar_times) + events_l).fillna(0) - events_s).fillna(0)
 
-    out = compute_gaussian_mixture_position_size(bar_times, event_times, sides, random_state=0)
+    out = gaussian_mixture_position_size(bar_times, event_times, sides, random_state=0)
     assert ((out >= -1) & (out <= 1)).sum() == out.shape[0]
     assert np.corrcoef(net_events.values, out.values)[0, 0] > 0.99
 
@@ -54,7 +54,7 @@ def test_budgeted_position_size(bar_times, event_times, sides):
         {'bars': bar_times.to_series(), 'long': events_l, 'short': events_s}, axis=1
     ).fillna(0).drop(columns=['bars'])
     expected = joined['long']/joined['long'].max() - joined['short']/joined['short'].max()
-    out = compute_budgeted_position_size(bar_times, event_times, sides)
+    out = budgeted_position_size(bar_times, event_times, sides)
     pd.testing.assert_series_equal(expected, out, check_less_precise=3)
 
 
@@ -73,7 +73,7 @@ def test_position_size_by_probabilities_no_side(bar_times, event_times, sides):
     expected_sizes = np.round(expected_sizes/0.1)*0.1
     expected_sizes = expected_sizes.loc[events.index.union(events[EventCol.END_TIME].values).drop_duplicates()]
 
-    out = compute_position_size_from_probabilities(
+    out = position_size_from_probabilities(
         events, 0.1, prob, pred, 2
     )
     pd.testing.assert_series_equal(expected_sizes, out, check_less_precise=1, check_names=False)
@@ -97,7 +97,7 @@ def test_position_size_by_probabilities_with_side(bar_times, event_times, sides)
     expected_sizes = np.round(expected_sizes/0.1)*0.1
     expected_sizes = expected_sizes.loc[events.index.union(events[EventCol.END_TIME].values).drop_duplicates()]
 
-    out = compute_position_size_from_probabilities(
+    out = position_size_from_probabilities(
         events, 0.1, prob, pred, 2
     )
     pd.testing.assert_series_equal(expected_sizes, out, check_less_precise=1, check_names=False)
@@ -105,14 +105,14 @@ def test_position_size_by_probabilities_with_side(bar_times, event_times, sides)
 
 def test_divergence_position_size():
     w = get_sigmoid_coeff(10, 0.95)
-    pos_size = compute_position_size_from_divergence(110, 100, 100, w)
+    pos_size = position_size_from_divergence(110, 100, 100, w)
     assert pos_size == 95
-    pos_size = compute_position_size_from_divergence(115, 100, 100, w)
+    pos_size = position_size_from_divergence(115, 100, 100, w)
     assert pos_size == 97
 
 
 def test_divergence_position_limit_price():
     w = get_sigmoid_coeff(10, 0.95)
-    pos_size = compute_position_size_from_divergence(115, 100, 100, w)
+    pos_size = position_size_from_divergence(115, 100, 100, w)
     limit_price = compute_limit_price(0, pos_size, 100, 115, w)
     assert limit_price == pytest.approx(112.3657)
