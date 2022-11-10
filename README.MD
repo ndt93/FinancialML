@@ -113,3 +113,5 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 * Barra (2013): MSCI BARRA Factor Indexes Methodology, 1st ed. MSCI Barra. Avail- able at https://www.msci.com/eqb/methodology/meth_docs/MSCI_Barra_Factor%20Indices_ Methodology_Nov13.pdf .
 * CFA Institute (2010): “Global investment performance standards.” CFA Institute, Vol. 2010, No. 4, February. Available at https://www.gipsstandards.org/.
 * Zhang, Y. and S. Rachev (2004): “Risk attribution and portfolio performance measurement— An overview.” Working paper, University of California, Santa Barbara. Available at http:// citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.318.7169.
+* Calkin, N. and M. L´opez de Prado (2014): “The topology of macro financial flows: An application of stochastic flow diagrams.” Algorithmic Finance, Vol. 3, No. 1, pp. 43–85. Available at http://ssrn.com/abstract=2379319.
+* Kolanovic, M.,A. Lau, T. Lee, and R. Krishnamachari (2017): “Cross asset portfolios of tradable risk premia indices. Hierarchical risk parity: Enhancing returns at target volatility.” White paper, Global Quantitative & Derivatives Strategy. J.P. Morgan, April 26.

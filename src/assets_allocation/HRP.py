@@ -58,7 +58,7 @@ def _get_inverse_cov_portfolio(cov: np.ndarray) -> np.ndarray:
 def _get_cluster_var(cov: np.ndarray, cluster_indices: list) -> float:
     cov = cov[np.ix_(cluster_indices, cluster_indices)]
     weights = _get_inverse_cov_portfolio(cov).reshape(-1, 1)
-    var = np.dot(np.dot(weights.T, cov), cov)[0, 0]
+    var = np.dot(np.dot(weights.T, cov), weights)[0, 0]
     return var
 
 
