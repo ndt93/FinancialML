@@ -1,6 +1,9 @@
 import numpy as np
+import pandas as pd
 from statsmodels.regression.recursive_ls import RecursiveLS
 
+
+# --- CUSUM Tests ---
 
 def recursive_residuals_cusum_stats(X: np.ndarray, y: np.ndarray):
     """
@@ -32,4 +35,98 @@ def levels_cusum_stats(y: np.ndarray, n: int):
     t = np.arange(2, len(y) + 1)
     sigma = 1/(t - 1)*np.cumsum(diff**2)
     res = (y[n+1:] - y[n])*(sigma[n:]*np.sqrt(t[:n] - (n + 1)))**-1
+    return res
+
+
+# --- Supremum Augmented Dickey-Fuller ---
+
+def _get_lag_df(df: pd.DataFrame, lags: int | list[int]):
+    """
+    Get DataFrame with columns containing lagged values of input DataFrame
+    :param df: input DataFrame
+    :param lags: a number for max lags or list of lags
+    :return: DataFrame columns for each lag value
+    """
+    df_out = pd.DataFrame()
+    if isinstance(lags, int):
+        lags = range(lags + 1)
+    for lag in lags:
+        df_lag = df.shift(lag).copy(deep=True)
+        df_lag.columns = [f'{c}_{lag}' for c in df_lag.columns]
+        df_out = df_out.join(df_lag, how='outer')
+    return df_out
+
+
+def _get_yx(series: pd.DataFrame, constant: str, lags: int | list[int]):
+    """
+    Prepare the X and y matrices for the autoregressive models in ADF test
+
+    :param series: A timeseries DataFrame
+    :param constant: 'nc' if no constant, 'ct' for linear time trend, 'ctt' for quadratic time trend
+    :param lags: a number for max lags or list of lags
+    :return: X and y matrices
+    """
+    diff = series.diff().dropna()
+    x = _get_lag_df(diff, lags).dropna()
+    x.iloc[:, 0] = series.values[-x.shape[0]-1:-1, 0]
+    y = diff.iloc[-x.shape[0]:].values
+    if constant != 'nc':
+        x = np.append(x, np.ones((x.shape[0], 1)), axis=1)
+        if constant[:2] == 'ct':
+            trend = np.arange(x.shape[0]).reshape(-1, 1)
+            x = np.append(x, trend, axis=1)
+            if constant == 'ctt':
+                x = np.append(x, trend**2, axis=1)
+    return y, x
+
+
+def _fit_adf(y: np.ndarray, x: np.ndarray):
+    xy = np.dot(x.T, y)
+    xx = np.dot(x.T, x)
+    xx_inv = np.linalg.inv(xx)
+    b_mean = np.dot(xx_inv, xy)
+    err = y - np.dot(x, b_mean)
+    b_var = np.dot(err.T, err)/(x.shape[0] - x.shape[1])*xx_inv
+    return b_mean, b_var
+
+
+def sadf_stat(series: pd.DataFrame, min_sample_len, constant, lags):
+    """
+    Calculate the Supremum Augmented Dickey-Fuller test statistic.
+
+    :param series: a timeseries of prices or returns
+    :param min_sample_len: min number of samples for the ADF regression
+    :param constant: 'nc' if no constant, 'ct' for linear time trend, 'ctt' for quadratic time trend
+    :param lags: a number for max lags or list of lags
+    :return: the SADF test statistic
+    """
+    y, x = _get_yx(series, constant, lags)
+    start_points = range(0, y.shape[0] + lags - min_sample_len + 1)
+    all_adf = []
+    max_adf = -np.inf
+    for start in start_points:
+        y_, x_ = y[start:], x[start:]
+        b_mean, b_var = _fit_adf(y, x)
+        b_mean, b_std = b_mean[0, 0], np.sqrt(b_var[0, 0])
+        all_adf.append(b_mean/b_std)
+        max_adf = max(max_adf, all_adf[-1])
+    return max_adf
+
+
+def sadf_stat_series(series: pd.DataFrame, min_sample_len, constant, lags):
+    """
+    Calculate the Supremum Augmented Dickey-Fuller test statistic for each point in a time series
+
+    :param series: a timeseries of prices or returns. Log-prices are generally better to keep return variance
+        constants relative to the raw price level
+    :param min_sample_len: min number of samples for the ADF regression
+    :param constant: 'nc' if no constant, 'ct' for linear time trend, 'ctt' for quadratic time trend
+    :param lags: a number for max lags or list of lags
+    :return: time series of SADF test statistics
+    """
+    res = [
+        sadf_stat(series[:t+1], min_sample_len, constant, lags)
+        for t in range(series.shape[0])
+    ]
+    res = pd.Series(res, index=series.index)
     return res
