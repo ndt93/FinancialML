@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from events.filters import filter_symmetric_cumsum
+from events.filters import filter_symmetric_cusum
 
 
 def test_symmetric_cumsum_filter():
@@ -10,5 +10,5 @@ def test_symmetric_cumsum_filter():
         0 + np.array([1, 1, 1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, 1]).cumsum(),
         index=time_index
     )
-    events = filter_symmetric_cumsum(series, 3)
+    events = filter_symmetric_cusum(series, 3)
     np.testing.assert_array_equal(events.values, time_index[[4, 10]].values)
