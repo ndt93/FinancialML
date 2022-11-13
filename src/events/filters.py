@@ -5,7 +5,7 @@ at which there is a higher likelihood of an actionable event
 import pandas as pd
 
 
-def filter_symmetric_cumsum(series, threshold):
+def filter_symmetric_cusum(series, threshold):
     """
     :param series: time series of a selected market feature with a DateTimeIndex
     :param threshold: threshold above which an event is sampled
