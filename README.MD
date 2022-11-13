@@ -115,3 +115,5 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 * Zhang, Y. and S. Rachev (2004): “Risk attribution and portfolio performance measurement— An overview.” Working paper, University of California, Santa Barbara. Available at http:// citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.318.7169.
 * Calkin, N. and M. L´opez de Prado (2014): “The topology of macro financial flows: An application of stochastic flow diagrams.” Algorithmic Finance, Vol. 3, No. 1, pp. 43–85. Available at http://ssrn.com/abstract=2379319.
 * Kolanovic, M.,A. Lau, T. Lee, and R. Krishnamachari (2017): “Cross asset portfolios of tradable risk premia indices. Hierarchical risk parity: Enhancing returns at target volatility.” White paper, Global Quantitative & Derivatives Strategy. J.P. Morgan, April 26.
+* Homm, U. and J. Breitung (2012): “Testing for speculative bubbles in stock markets: A comparison of alternative methods.” Journal of Financial Econometrics, Vol. 10, No. 1, 198–231.
+* Phillips, P.,Y.Wu, and J.Yu (2011): “Explosive behavior in the 1990s Nasdaq: When did exuberance escalate asset values?” International Economic Review, Vol. 52, pp. 201–226.

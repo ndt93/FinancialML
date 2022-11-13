@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 from statsmodels.regression.recursive_ls import RecursiveLS
 
 
@@ -11,13 +12,19 @@ def recursive_residuals_cusum_stats(X: np.ndarray, y: np.ndarray):
     Under the null hypothesis of stable coefficient beta(t) = beta, distribution of CUSUM statistic:
         S(t) ~ N[0, t - k - 1]. t = 1,..,T
 
-    :param X: Txk matrix of time series of features
+    :param X: Txk matrix of time series of k features
     :param y: timeseries of T labels
-    :return: timeseries of CUSUM statistics, statsmodels RecursiveLSResults object
+    :return: timeseries of CUSUM statistics, p-values, statsmodels RecursiveLSResults object
     """
     rls = RecursiveLS(y, X)
     res = rls.fit()
-    return res.cusum, res
+    cusum = res.cusum
+    null_dist_std = np.sqrt(X.shape[0] - X.shape[1] - 1)
+    pval = np.minimum(
+        norm.cdf(cusum, loc=0, scale=null_dist_std),
+        1. - norm.cdf(cusum, loc=0, scale=null_dist_std)
+    )
+    return cusum, pval, res
 
 
 def levels_cusum_stats(y: np.ndarray, n: int):
@@ -33,12 +40,13 @@ def levels_cusum_stats(y: np.ndarray, n: int):
         return None
     diff = np.diff(y)
     t = np.arange(2, len(y) + 1)
-    sigma = 1/(t - 1)*np.cumsum(diff**2)
-    res = (y[n+1:] - y[n])*(sigma[n:]*np.sqrt(t[:n] - (n + 1)))**-1
-    return res
+    sigma = np.sqrt(1/(t - 1)*np.cumsum(diff**2))
+    res = (y[n+1:] - y[n])*(sigma[n:]*np.sqrt(t[n:] - (n + 1)))**-1
+    pval = np.minimum(norm.cdf(res), 1. - norm.cdf(res))
+    return res, pval
 
 
-# --- Supremum Augmented Dickey-Fuller ---
+# --- Explosiveness Test: Supremum Augmented Dickey-Fuller ---
 
 def _get_lag_df(df: pd.DataFrame, lags: int | list[int]):
     """
@@ -105,8 +113,8 @@ def sadf_stat(series: pd.DataFrame, min_sample_len, constant, lags):
     all_adf = []
     max_adf = -np.inf
     for start in start_points:
-        y_, x_ = y[start:], x[start:]
-        b_mean, b_var = _fit_adf(y, x)
+        y_sub, x_sub = y[start:], x[start:]
+        b_mean, b_var = _fit_adf(y_sub, x_sub)
         b_mean, b_std = b_mean[0, 0], np.sqrt(b_var[0, 0])
         all_adf.append(b_mean/b_std)
         max_adf = max(max_adf, all_adf[-1])
@@ -126,7 +134,9 @@ def sadf_stat_series(series: pd.DataFrame, min_sample_len, constant, lags):
     """
     res = [
         sadf_stat(series[:t+1], min_sample_len, constant, lags)
-        for t in range(series.shape[0])
+        for t in range(min_sample_len, series.shape[0])
     ]
-    res = pd.Series(res, index=series.index)
+    res = pd.Series(res, index=series.index[min_sample_len:])
     return res
+
+# TODO: Explosiveness tests: Quantile ADF, Conditional ADF, Sub- & Super- Martingale Tests

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
-from utils.simulation import generate_mixed_gaussians
+from utils.simulation import gen_mixed_gaussians
 
 
 def strategy_sharpe_ratio(p, freq, profit, loss):
@@ -87,6 +87,6 @@ def simulate_strategy_probability_of_failure(mu1, mu2, sigma1, sigma2, prob1, n_
     :param target_sr: the target Sharpe ratio
     :return: strategy risk/probability of failure
     """
-    returns = generate_mixed_gaussians(mu1, mu2, sigma1, sigma2, prob1, n_samples)
+    returns = gen_mixed_gaussians(mu1, mu2, sigma1, sigma2, prob1, n_samples)
     prob_failure = strategy_probability_of_failure(returns, freq, target_sr)
     return prob_failure
