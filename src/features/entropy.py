@@ -19,14 +19,14 @@ def _word_pmf(msg: str | list, w: int):
     """
     lib = {}
     msg = _stringify(msg)
-    for i in range(w, len(msg)):
+    for i in range(w, len(msg) + 1):
         msg_sub = msg[i-w:i]
         if msg_sub not in lib:
             lib[msg_sub] = [i-w]
         else:
             lib[msg_sub] = lib[msg_sub] + [i-w]
-    pmf = float(len(msg) - w)
-    pmf = {i: len(lib[i])/pmf for i in lib}
+    n_words = float(len(msg) - w + 1)
+    pmf = {i: len(lib[i])/n_words for i in lib}
     return pmf
 
 
@@ -40,7 +40,7 @@ def plugin_entropy(msg: str | list, w: int):
     """
     pmf = _word_pmf(msg, w)
     res = -sum(pmf[i]*np.log2(pmf[i]) for i in pmf)/w
-    return res, pmf
+    return res
 
 
 def lempelziv_lib(msg):
@@ -103,19 +103,19 @@ def konto_entropy(msg: str | list[str], window=None):
             l, sub_msg = _longest_match(msg, i, window)
             out['sum_entropy'] += np.log2(window+1)/l
         out['nr_str'].append(sub_msg)
+        out['n_points'] += 1
 
-    out['n_points'] = len(points)
     out['entropy'] = out['sum_entropy']/out['n_points']
     out['redundancy'] = 1 - out['entropy']/np.log2(len(msg))
-    return out
+    return out['entropy']
 
 
 # --- Encoding ---
 
-def binary_encode(series, threshold):
+def binary_encode(series: pd.Series, threshold: float):
     """
     Encode a numeric series as a string of 0 and 1
-    :param: series: input series
+    :param series: input series
     :param threshold: binary threshold
     :return: encoded string
     """
@@ -129,21 +129,21 @@ class QuantileEncoder(TransformerMixin, BaseEstimator):
     Encode numeric series based on their quantiles
     """
 
-    FULL_ALPHABET = string.digits + string.ascii_letters
+    FULL_ALPHABET = [c for c in string.digits + string.ascii_letters]
 
     def __init__(self, n_quantiles=10):
         assert n_quantiles <= len(self.FULL_ALPHABET)
         self.n_quantiles_ = n_quantiles
-        self.alphabet_ = np.array(self.FULL_ALPHABET[:n_quantiles] + '?')
+        self.alphabet_ = np.array(self.FULL_ALPHABET[:n_quantiles] + ['?'])
         self.quantile_probs_ = np.linspace(0, 1, n_quantiles)
         self.quantiles_ = None  # type: pd.Series
 
-    def fit(self, series):
+    def fit(self, series: pd.Series):
         quantiles = np.quantile(series, self.quantile_probs_)
-        self.quantiles_ = pd.Series(quantiles)
+        self.quantiles_ = pd.Series(quantiles, index=self.alphabet_[:-1])
         return self
 
-    def transform(self, series):
+    def transform(self, series: pd.Series):
         if self.quantiles_ is None:
             raise RuntimeError('Fit must be called first before transform')
         abc_indices = self.quantiles_.searchsorted(series)
@@ -151,16 +151,16 @@ class QuantileEncoder(TransformerMixin, BaseEstimator):
         return ''.join(res)
 
 
-def sigma_encode(series, sigma):
+def sigma_encode(series: pd.Series, sigma: float):
     """
     Encode a numeric series using equally space intervals
     :param series: input series
     :param sigma: spacing between codes
     :return: encoded string
     """
-    alphabet = string.digits + string.ascii_letters + '?'
+    alphabet = np.array([c for c in string.digits + string.ascii_letters + '?'])
     lo = np.min(series)
-    abc_indices = (series - lo) // sigma
+    abc_indices = ((series - lo) // sigma).astype(int).values
     abc_indices = np.minimum(abc_indices, len(alphabet) - 1)
-    res = series[abc_indices]
+    res = alphabet[abc_indices]
     return ''.join(res)
