@@ -117,3 +117,6 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 * Kolanovic, M.,A. Lau, T. Lee, and R. Krishnamachari (2017): “Cross asset portfolios of tradable risk premia indices. Hierarchical risk parity: Enhancing returns at target volatility.” White paper, Global Quantitative & Derivatives Strategy. J.P. Morgan, April 26.
 * Homm, U. and J. Breitung (2012): “Testing for speculative bubbles in stock markets: A comparison of alternative methods.” Journal of Financial Econometrics, Vol. 10, No. 1, 198–231.
 * Phillips, P.,Y.Wu, and J.Yu (2011): “Explosive behavior in the 1990s Nasdaq: When did exuberance escalate asset values?” International Economic Review, Vol. 52, pp. 201–226.
+* Fiedor, Pawel (2014a): “Mutual information rate-based networks in financial markets.” Working paper, arXiv. Available at https://arxiv.org/abs/1401.2548.
+* Fiedor, Pawel (2014b): “Information-theoretic approach to lead-lag effect on financial markets.” Working paper, arXiv. Available at https://arxiv.org/abs/1402.3820.
+* Fiedor, Pawel (2014c): “Causal non-linear financial networks.” Working paper, arXiv. Available at https://arxiv.org/abs/1407.5020.
