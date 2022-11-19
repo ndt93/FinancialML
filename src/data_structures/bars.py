@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from data_structures.constants import TickCol, BarCol, BarUnit
+from features.microstructure import tick_rule
 from utils.time_series import fast_ewma
 
 
@@ -92,22 +93,6 @@ def aggregate_dollar_bars(ticks, frequency):
     cm_dollars = (df[TickCol.VOLUME]*df[TickCol.PRICE]).cumsum()
     df['bar_id'] = cm_dollars // frequency
     return _group_ticks_to_bars(df)
-
-
-def _compute_tick_rule(ticks, b0):
-    price_change = ticks[TickCol.PRICE].diff().values
-    if len(price_change) == 0:
-        return np.array([])
-    tick_directions = np.zeros(len(price_change))
-    tick_directions[0] = b0
-
-    for i in range(1, len(price_change)):
-        if price_change[i] == 0:
-            tick_directions[i] = tick_directions[i - 1]
-        else:
-            tick_directions[i] = abs(price_change[i])/price_change[i]
-
-    return tick_directions.astype(np.float64)
 
 
 def _compute_tick_bar_id(ticks, bar_end_indices):
@@ -234,7 +219,7 @@ def aggregate_imblance_bars(
     :param debug: returns ticks df with addition info
     :return: DataFrame of BarCol columns
     """
-    b_arr = _compute_tick_rule(ticks, b0=b0)
+    b_arr = tick_rule(ticks, b0=b0)
     if bar_unit == BarUnit.VOLUME:
         b_arr *= ticks[TickCol.VOLUME].values
     elif bar_unit == BarUnit.DOLLARS:
@@ -411,7 +396,7 @@ def aggregate_runs_bars(
     :param debug: return ticks DataFrame with additional colums for debugging
     :return: DataFrame of BarCol columns
     """
-    b_arr = _compute_tick_rule(ticks, b0=b0)
+    b_arr = tick_rule(ticks, b0=b0)
     if bar_unit == BarUnit.VOLUME:
         v_arr = ticks[TickCol.VOLUME]
     elif bar_unit == BarUnit.DOLLARS:

@@ -61,3 +61,10 @@ class StatsCol:
 class PortfolioCol:
     BEGIN_VALUE = 'BeginValue'
     CASHFLOW = 'Cashflow'
+
+
+class QuoteCol:
+    BID = 'Bid'
+    ASK = 'Ask'
+    SPREAD = 'Spread'
+    START_TIME = 'Start_Time'
