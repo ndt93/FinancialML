@@ -41,7 +41,7 @@ def _compute_bar_stats(ticks, timestamp='last'):
 
 
 def _group_ticks_to_bars(df):
-    df_grp = df.groupby('bar_id')
+    df_grp = df.groupby(TickCol.BAR_ID)
     df_res = df_grp.apply(_compute_bar_stats)
     df_res.set_index(BarCol.TIMESTAMP, inplace=True)
     return df_res
@@ -67,7 +67,7 @@ def aggregate_tick_bars(ticks, frequency):
     :return: DataFrame of BarCol columns
     """
     df = ticks.reset_index(drop=True)
-    df['bar_id'] = df.index // frequency
+    df[TickCol.BAR_ID] = df.index // frequency
     return _group_ticks_to_bars(df)
 
 
@@ -79,7 +79,7 @@ def aggregate_volume_bars(ticks, frequency):
     """
     df = ticks.reset_index(drop=True)
     cm_vol = df[TickCol.VOLUME].cumsum()
-    df['bar_id'] = cm_vol // frequency
+    df[TickCol.BAR_ID] = cm_vol // frequency
     return _group_ticks_to_bars(df)
 
 
@@ -91,7 +91,7 @@ def aggregate_dollar_bars(ticks, frequency):
     """
     df = ticks.reset_index(drop=True)
     cm_dollars = (df[TickCol.VOLUME]*df[TickCol.PRICE]).cumsum()
-    df['bar_id'] = cm_dollars // frequency
+    df[TickCol.BAR_ID] = cm_dollars // frequency
     return _group_ticks_to_bars(df)
 
 
@@ -239,7 +239,7 @@ def aggregate_imblance_bars(
 
     bar_id_arr = _compute_tick_bar_id(ticks, bar_end_indices)
     df = ticks.reset_index(drop=True)
-    df['bar_id'] = bar_id_arr
+    df[TickCol.BAR_ID] = bar_id_arr
     res = _group_ticks_to_bars(df)
     if debug:
         df = df.assign(theta=thetas, threshold=thresholds)
@@ -430,7 +430,7 @@ def aggregate_runs_bars(
 
     bar_id_arr = _compute_tick_bar_id(ticks, bar_end_indices)
     df = ticks.reset_index(drop=True)
-    df['bar_id'] = bar_id_arr
+    df[TickCol.BAR_ID] = bar_id_arr
     res = _group_ticks_to_bars(df)
     if debug:
         df = df.assign(theta=thetas, threshold=thresholds)

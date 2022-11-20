@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 
 from data_structures.constants import TickCol, BarCol, QuoteCol
 
 
-def tick_rule(ticks: pd.DataFrame, b0: float):
+def tick_rule(ticks: pd.DataFrame, b0: float = 1):
     """
-    Transform a sequence of ticks into a series of tick rule features b(t).
+    Transform a sequence of ticks into a series of aggressor flags b(t).
     b(t) determines a trade's aggressor side, where 1 and -1 represents a buy and sell initiated trade respectively.
     :param ticks: Dataframe of ticks with TickCol.PRICE
     :param b0: initial tick rule value
@@ -109,3 +110,53 @@ def corwin_schultz_spread(bars, window=1):
     spread.columns = [QuoteCol.SPREAD, QuoteCol.START_TIME]
     volatility = _corwin_schultz_volatility(beta, gamma)
     return spread, volatility
+
+
+def kyle_lambda(ticks: pd.DataFrame, b0=1):
+    """
+    Kyle's lambda estimates the market impact of order flow imbalance on price.
+    Order flow imbalance may indicate the presence of informed traders.
+    :param ticks: DataFrame of trades with volume and price
+    :param b0: the initial aggressor flag
+    :return: Kyle's lambda value, statsmodel's RegressionResults object
+    """
+    dp = ticks[TickCol.PRICE].diff().values[1:]
+    aggressor = tick_rule(ticks, b0=b0)
+    signed_volume = ticks[TickCol.VOLUME]*aggressor
+    signed_volume = sm.add_constant(signed_volume.values[1:])
+    ols = sm.OLS(dp, signed_volume)
+    res = ols.fit()
+    return res.params[1], res
+
+
+def amihud_lambda(bars: pd.DataFrame):
+    """
+    Amihud's lambda estimates the price impact of each one dollar of trading volume
+    :param bars: DataFrame of bars with close price, VWAP and volume
+    :return: Amihud's lambda value, statsmodel's RegressionResults object
+    """
+    abs_log_dp = np.abs(np.log(bars[BarCol.CLOSE]).diff()).values[1:]
+    dollar_volume = (bars[BarCol.VWAP]*bars[BarCol.VOLUME]).values[1:]
+    dollar_volume = sm.add_constant(dollar_volume)
+    ols = sm.OLS(abs_log_dp, dollar_volume)
+    res = ols.fit()
+    return res.params[1], res
+
+
+def hasbrouck_lambda(ticks: pd.DataFrame, b0=1):
+    """
+    Hasbrouck's lambda estimates the price impact coefficient based on trade-and-quote data
+    :param ticks: DataFrame of ticks with price, volume and bar ID
+    :param b0: initial trade aggressor flag
+    :return: Hasbrouck's lambda coefficient, statsmodel's RegressionResults object
+    """
+    bar_closes = ticks[TickCol.PRICE].groupby(TickCol.BAR_ID).last()
+    log_dp = np.log(bar_closes).diff().values[1:]
+    aggressor = tick_rule(ticks, b0)
+    dollar_volume = ticks[TickCol.VOLUME]*ticks[TickCol.PRICE]
+    x = np.sqrt(dollar_volume)*aggressor
+    x = x.groupby(TickCol.BAR_ID).sum()
+    x = sm.add_constant(x.values[1:])
+    ols = sm.OLS(log_dp, x)
+    res = ols.fit()
+    return res.params[1], res

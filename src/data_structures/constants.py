@@ -5,6 +5,7 @@ class TickCol:
     TIMESTAMP = 'Timestamp'
     PRICE = 'Price'
     VOLUME = 'Volume'
+    BAR_ID = 'Bar_ID'
 
 
 class BarCol:
