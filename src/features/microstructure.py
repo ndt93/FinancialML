@@ -160,3 +160,24 @@ def hasbrouck_lambda(ticks: pd.DataFrame, b0=1):
     ols = sm.OLS(log_dp, x)
     res = ols.fit()
     return res.params[1], res
+
+
+def volume_synchronized_pin(ticks: pd.DataFrame, volume_per_bar, n=1, b0=1):
+    """
+    The volume synchronized probability of informed trading (VPIN, see Easley et al. [2008]).
+    :param ticks: DataFrame of ticks with volume and volume bar ID (each bar has the same volume)
+    :param volume_per_bar: volume per bar
+    :param n: number of bars to produce each VPIN estimate in time
+    :param b0: initial trade aggressor flag
+    :return: the VPIN value
+    """
+    aggressor = tick_rule(ticks, b0)
+    buy_volume = ticks[TickCol.VOLUME]*(aggressor == 1)
+    sell_volume = ticks[TickCol.VOLUME]*(aggressor == -1)
+    net_volume = pd.DataFrame(
+        {TickCol.BAR_ID: ticks[TickCol.BAR_ID], 'net_volume': buy_volume - sell_volume},
+        index=ticks.index
+    )
+    net_volume = net_volume.groupby(TickCol.BAR_ID).sum()
+    vpin = np.abs(net_volume.rolling(n).sum())/(n*volume_per_bar)
+    return vpin
