@@ -9,6 +9,7 @@ def tick_rule(ticks: pd.DataFrame, b0: float = 1):
     """
     Transform a sequence of ticks into a series of aggressor flags b(t).
     b(t) determines a trade's aggressor side, where 1 and -1 represents a buy and sell initiated trade respectively.
+
     :param ticks: Dataframe of ticks with TickCol.PRICE
     :param b0: initial tick rule value
     :return: array of tick rule values
@@ -40,22 +41,25 @@ def roll_effective_spread(ticks: pd.DataFrame):
     :param ticks: Dataframe of ticks with TickCol.PRICE
     :return: c, var(dm)
     """
-    dp = ticks[TickCol.PRICE].diff().values
+    dp = ticks[TickCol.PRICE].diff().values[1:]
     dp_var = np.var(dp)
-    dp_corr = np.corrcoef(dp[:-1], dp[1:])[0, 1]
-    c = np.sqrt(max(0, -dp_corr))
-    dm_var = dp_var + 2*dp_corr
-    return c, dm_var
+    dp_cov = np.cov(dp[:-1], dp[1:])[0, 1]
+    c = np.sqrt(max(0, -dp_cov))
+    dm_var = dp_var + 2*dp_cov
+    return c*2, dm_var
 
 
-def high_low_volatility(bars: pd.DataFrame):
+def high_low_volatility(bars: pd.DataFrame, window: int = 1):
     """
     Volatility estimate based on high-low prices instead of closing prices. See Beckers [1983] and Parkinson [1980].
+
     :param bars: Dataframe of price bars
-    :return: the high-low volatility estimate
+    :param window: rolling window for moving average of volatility estimate
+    :return: time series of high-low volatility estimates
     """
     hl_log_rets = np.log(bars[BarCol.HIGH]) - np.log(bars[BarCol.LOW])
-    return np.mean(hl_log_rets**2)/(4*np.log(2))
+    rolling_mean = pd.Series(hl_log_rets**2, index=bars.index).rolling(window).mean()
+    return np.sqrt(rolling_mean/(4*np.log(2)))
 
 
 def _get_beta(bars: pd.DataFrame, window: int):
@@ -82,6 +86,7 @@ def _get_alpha(beta, gamma):
 def _corwin_schultz_volatility(beta, gamma):
     """
     The Becker-Parkinson High-Low volatility estimate from Corwin Schultz beta and gamma
+
     :param beta: beta in Corwin Schultz equation
     :param gamma:
     :return:
@@ -97,6 +102,7 @@ def _corwin_schultz_volatility(beta, gamma):
 def corwin_schultz_spread(bars, window=1):
     """
     The Corwin and Schultz bid-ask spread and volatility estimates from high and low prices
+
     :param bars: DataFrame of price bars
     :param window: rolling window size for estimating beta
     :return: (spread, volatility) estimates
@@ -132,6 +138,7 @@ def kyle_lambda(ticks: pd.DataFrame, b0=1):
 def amihud_lambda(bars: pd.DataFrame):
     """
     Amihud's lambda estimates the price impact of each one dollar of trading volume
+
     :param bars: DataFrame of bars with close price, VWAP and volume
     :return: Amihud's lambda value, statsmodel's RegressionResults object
     """
@@ -146,16 +153,17 @@ def amihud_lambda(bars: pd.DataFrame):
 def hasbrouck_lambda(ticks: pd.DataFrame, b0=1):
     """
     Hasbrouck's lambda estimates the price impact coefficient based on trade-and-quote data
+
     :param ticks: DataFrame of ticks with price, volume and bar ID
     :param b0: initial trade aggressor flag
     :return: Hasbrouck's lambda coefficient, statsmodel's RegressionResults object
     """
-    bar_closes = ticks[TickCol.PRICE].groupby(TickCol.BAR_ID).last()
+    bar_closes = ticks[[TickCol.PRICE, TickCol.BAR_ID]].groupby(TickCol.BAR_ID).last()
     log_dp = np.log(bar_closes).diff().values[1:]
     aggressor = tick_rule(ticks, b0)
     dollar_volume = ticks[TickCol.VOLUME]*ticks[TickCol.PRICE]
-    x = np.sqrt(dollar_volume)*aggressor
-    x = x.groupby(TickCol.BAR_ID).sum()
+    x = pd.DataFrame({'x': np.sqrt(dollar_volume)*aggressor, TickCol.BAR_ID: ticks[TickCol.BAR_ID]})
+    x = x.groupby(TickCol.BAR_ID)['x'].sum()
     x = sm.add_constant(x.values[1:])
     ols = sm.OLS(log_dp, x)
     res = ols.fit()
@@ -165,6 +173,7 @@ def hasbrouck_lambda(ticks: pd.DataFrame, b0=1):
 def volume_synchronized_pin(ticks: pd.DataFrame, volume_per_bar, n=1, b0=1):
     """
     The volume synchronized probability of informed trading (VPIN, see Easley et al. [2008]).
+
     :param ticks: DataFrame of ticks with volume and volume bar ID (each bar has the same volume)
     :param volume_per_bar: volume per bar
     :param n: number of bars to produce each VPIN estimate in time

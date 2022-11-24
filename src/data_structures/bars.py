@@ -47,7 +47,7 @@ def _group_ticks_to_bars(df):
     return df_res
 
 
-def aggregate_time_bars(ticks, frequency):
+def aggregate_time_bars(ticks: pd.DataFrame, frequency):
     """
     :param ticks: DataFrame of TickCol columns
     :param frequency: time interval per bar.
@@ -60,7 +60,7 @@ def aggregate_time_bars(ticks, frequency):
     return df_res
 
 
-def aggregate_tick_bars(ticks, frequency):
+def aggregate_tick_bars(ticks: pd.DataFrame, frequency: float):
     """
     :param ticks: DataFrame of TickCol columns
     :param frequency: number of trades per bar
@@ -71,19 +71,23 @@ def aggregate_tick_bars(ticks, frequency):
     return _group_ticks_to_bars(df)
 
 
-def aggregate_volume_bars(ticks, frequency):
+def aggregate_volume_bars(ticks: pd.DataFrame, frequency: float, return_bar_id=False):
     """
     :param ticks: DataFrame of TickCol columns
     :param frequency: volume traded per bar
-    :return: DataFrame of BarCol columns
+    :param return_bar_id: return ticks with TickCol.BAR_ID
+    :return: DataFrame of BarCol columns, Optional[ticks with TickCol.BAR_ID]
     """
     df = ticks.reset_index(drop=True)
     cm_vol = df[TickCol.VOLUME].cumsum()
     df[TickCol.BAR_ID] = cm_vol // frequency
-    return _group_ticks_to_bars(df)
+    res = _group_ticks_to_bars(df)
+    if return_bar_id:
+        return res, df
+    return res
 
 
-def aggregate_dollar_bars(ticks, frequency):
+def aggregate_dollar_bars(ticks: pd.DataFrame, frequency: float):
     """
     :param ticks: DataFrame of TickCol columns
     :param frequency: dollars amount traded per bar
@@ -192,7 +196,7 @@ def _compute_imbalance_bar_sizes(
 
 
 def aggregate_imblance_bars(
-        ticks,
+        ticks: pd.DataFrame,
         bar_unit=BarUnit.TICK,
         min_bar_size=0,
         max_bar_size=np.inf,
@@ -363,7 +367,7 @@ def _compute_runs_bar_sizes(
 
 
 def aggregate_runs_bars(
-        ticks,
+        ticks: pd.DataFrame,
         bar_unit=BarUnit.TICK,
         min_bar_size=0,
         max_bar_size=np.inf,

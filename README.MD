@@ -120,3 +120,11 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 * Fiedor, Pawel (2014a): “Mutual information rate-based networks in financial markets.” Working paper, arXiv. Available at https://arxiv.org/abs/1401.2548.
 * Fiedor, Pawel (2014b): “Information-theoretic approach to lead-lag effect on financial markets.” Working paper, arXiv. Available at https://arxiv.org/abs/1402.3820.
 * Fiedor, Pawel (2014c): “Causal non-linear financial networks.” Working paper, arXiv. Available at https://arxiv.org/abs/1407.5020.
+* Abad, D. and J. Yague (2012): “From PIN to VPIN.” The Spanish Review of Financial Economics, Vol. 10, No. 2, pp.74-83.
+* Aitken, M. and A. Frino (1996): “The accuracy of the tick test: Evidence from the Australian Stock Exchange.” Journal of Banking and Finance, Vol. 20, pp. 1715–1729.
+* Beckers, S. (1983): “Variances of security price returns based on high, low, and closing prices.” Journal of Business, Vol. 56, pp. 97–112.
+* Carlin, B., M. Sousa Lobo, and S. Viswanathan (2005): “Episodic liquidity crises. Cooperative and predatory trading.” Journal of Finance, Vol. 42, No. 5 (October), pp. 2235–2274.
+* Cheung,W., R. Chou, A. Lei (2015): “Exchange-traded barrier option and VPIN.” Journal of Futures Markets, Vol. 35, No. 6, pp. 561-581.
+* Easley, D., R. Engle, M. O’Hara, and L. Wu (2008): “Time-varying arrival rates of informed and uninformed traders.” Journal of Financial Econometrics, Vol. 6, No. 2, pp. 171–207.
+* Eisler, Z., J. Bouchaud, and J. Kockelkoren (2012): “The impact of order book events: Market orders, limit orders and cancellations.” Quantitative Finance, Vol. 12, No. 9, pp. 1395– 1419.
+* O’Hara, M. (1995): Market Microstructure, 1st ed. Blackwell, Oxford.
