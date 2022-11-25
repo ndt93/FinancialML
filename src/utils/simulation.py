@@ -14,9 +14,10 @@ def gen_geometric_brownian(s0: float, drift, volatility, num_steps: int, interva
     :param random_state: random state
     :return: realized times series of a geometric brownian stochastic process
     """
+    np.random.seed(random_state)
     s = s0
     for _ in range(num_steps):
-        ret = drift*interval + volatility*np.sqrt(interval)*norm.rvs(random_state=random_state)
+        ret = drift*interval + volatility*np.sqrt(interval)*norm.rvs()
         s += s * ret
         yield s
 

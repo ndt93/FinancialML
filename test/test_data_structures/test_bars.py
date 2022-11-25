@@ -4,7 +4,7 @@ import pytest
 import data_structures.bars as bars
 from data_structures.constants import BarUnit, BarCol, TickCol
 
-ticks = pd.read_csv('../../data/trade_20220920.csv')
+ticks = pd.read_csv('../data/trade_20220920.csv')
 ticks = ticks[ticks['symbol'] == 'XBTUSD'][['timestamp', 'price', 'foreignNotional']]
 ticks['timestamp'] = pd.to_datetime(ticks['timestamp'].str.slice(0, -3), format='%Y-%m-%dD%H:%M:%S.%f')
 ticks = ticks.rename(columns={
@@ -78,7 +78,7 @@ def test_tick_imbalance_bars(ticks_sample):
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
     ]
     assert len(tick_imbalance_bars) == 157
-    bar_sizes = ticks_ext['bar_id'].value_counts().sort_index().values
+    bar_sizes = ticks_ext[TickCol.BAR_ID].value_counts().sort_index().values
     assert max(bar_sizes) <= max_bar_size
     assert min(bar_sizes[:-1]) >= min_bar_size
 
@@ -150,7 +150,7 @@ def test_tick_runs_bars(ticks_sample):
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
     ]
     assert len(tick_runs_bars) == 148
-    bar_sizes = ticks_ext['bar_id'].value_counts().sort_index().values
+    bar_sizes = ticks_ext[TickCol.BAR_ID].value_counts().sort_index().values
     assert max(bar_sizes) <= max_bar_size
     assert min(bar_sizes[:-1]) >= min_bar_size
 

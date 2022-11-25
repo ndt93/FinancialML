@@ -5,6 +5,7 @@ class TickCol:
     TIMESTAMP = 'Timestamp'
     PRICE = 'Price'
     VOLUME = 'Volume'
+    BAR_ID = 'Bar_ID'
 
 
 class BarCol:
@@ -61,3 +62,10 @@ class StatsCol:
 class PortfolioCol:
     BEGIN_VALUE = 'BeginValue'
     CASHFLOW = 'Cashflow'
+
+
+class QuoteCol:
+    BID = 'Bid'
+    ASK = 'Ask'
+    SPREAD = 'Spread'
+    START_TIME = 'Start_Time'
