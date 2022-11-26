@@ -4,7 +4,7 @@ import pytest
 import data_structures.bars as bars
 from data_structures.constants import BarUnit, BarCol, TickCol
 
-ticks = pd.read_csv('../data/trade_20220920.csv')
+ticks = pd.read_csv('../../data/trade_20220920.csv')
 ticks = ticks[ticks['symbol'] == 'XBTUSD'][['timestamp', 'price', 'foreignNotional']]
 ticks['timestamp'] = pd.to_datetime(ticks['timestamp'].str.slice(0, -3), format='%Y-%m-%dD%H:%M:%S.%f')
 ticks = ticks.rename(columns={
@@ -22,7 +22,6 @@ def ticks_sample():
 
 def test_time_bars(ticks_sample):
     time_bars = bars.aggregate_time_bars(ticks, '15min')
-    print(time_bars)
     assert list(time_bars.columns.values) == [
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
     ]

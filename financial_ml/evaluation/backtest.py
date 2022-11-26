@@ -6,7 +6,7 @@ import pandas as pd
 
 from evaluation.metrics import sharpe_ratio
 from evaluation.cross_validation import apply_purging_and_embargo
-from utils.stats import KDEDist
+from utils.stats import KDERv
 
 
 def compute_pbo(perm_matrix: np.ndarray, eval_fn=sharpe_ratio, n_partitions=10):
@@ -51,7 +51,7 @@ def compute_pbo(perm_matrix: np.ndarray, eval_fn=sharpe_ratio, n_partitions=10):
         rank_logits.append(test_rank_logit)
 
     kde = gaussian_kde(rank_logits)
-    kde_dist = KDEDist(kde)
+    kde_dist = KDERv(kde)
     pbo = kde_dist.cdf(0)
     return pbo, rank_logits, train_optimal_perm, test_assoc_perm
 

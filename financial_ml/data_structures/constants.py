@@ -57,6 +57,7 @@ class StatsCol:
     NUM_OBS = 'nObs'
     CONF_95 = '95% Conf'
     CORR = 'Corr'
+    PDF = 'PDF'
 
 
 class PortfolioCol:
@@ -69,3 +70,9 @@ class QuoteCol:
     ASK = 'Ask'
     SPREAD = 'Spread'
     START_TIME = 'Start_Time'
+
+
+class OptionCol:
+
+    STRIKE = 'Strike'
+    PRICE = 'Price'

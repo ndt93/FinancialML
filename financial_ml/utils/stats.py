@@ -37,7 +37,7 @@ def augmented_dickey_fuller_pval(series, **kwargs):
 
 
 # Scipy's rv_continuous class from a KDE estimation
-class KDEDist(rv_continuous):
+class KDERv(rv_continuous):
 
     def __init__(self, kde, *args, **kwargs):
         super().__init__(*args, **kwargs)
