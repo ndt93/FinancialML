@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 from scipy.stats import norm
 
-from assets_allocation.position_sizing import (
+from financial_ml.assets_allocation.position_sizing import (
     gaussian_mixture_position_size,
     get_sigmoid_coeff,
     position_size_from_divergence,
@@ -11,8 +11,8 @@ from assets_allocation.position_sizing import (
     budgeted_position_size,
     position_size_from_probabilities
 )
-from data_structures.constants import EventCol
-from labeling.weighting import count_events_per_bar, get_event_indicators
+from financial_ml.data_structures.constants import EventCol
+from financial_ml.labeling.weighting import count_events_per_bar, get_event_indicators
 
 
 def indices_to_intervals(bar_times, indices):

@@ -4,13 +4,13 @@ import pandas as pd
 from scipy.ndimage import gaussian_filter1d
 from scipy.stats import gaussian_kde
 
-from data_structures.constants import OptionCol, StatsCol
-from utils.stats import KDERv
+from financial_ml.data_structures.constants import OptionCol, StatsCol
+from financial_ml.utils.stats import KDERv
 
 
 def implied_risk_free_rate(calls: pd.DataFrame, puts: pd.DataFrame, s0: float, t: float, d: float = 0.):
     """
-    Get implied risk-free interest rate from call-put parity
+    Get thee implied continuously-compounded risk-free interest rate from call-put parity
 
     :param calls: DataFrame of call options Strike and Price
     :param puts: DataFrame of put options Strike and Price
@@ -36,7 +36,7 @@ def implied_underlying_discrete_pdf(
 
     :param options: DataFrame of Strike and Price
     :param t: time to expiry in years
-    :param r: risk-free interest rate
+    :param r: continuously-compounded risk-free interest rate
     :param n_interpolate: number of strikes to be interpolated in the pdf
     :param smooth_width: Gaussian filter width for smoothing
     :return: DataFrame estimated PDF for each interpolated strike price
@@ -70,7 +70,7 @@ def implied_underlying_distribution(
     :param calls: DataFrame of call option Strike and Price
     :param puts: DataFrame of call option Strike and Price
     :param t: time to expiry in years
-    :param r: risk-free interest rate. If None, estimate from call-put parity
+    :param r: continuously-compounded risk-free interest rate. If None, estimate from call-put parity
     :param s0: current underlying asset price.
     :param d: dividend from underlying asset from now til options expiry
     :param n_interpolate: number of interpolated strike prices for estimating discrete pdf.
@@ -98,4 +98,4 @@ def implied_underlying_distribution(
     )
     pdf_fn = gaussian_kde(price_samples)
     pdf_rv = KDERv(pdf_fn, a=0, xtol=1e-6)
-    return pdf_rv, pdf_fn
+    return {'rv': pdf_rv, 'pdf': pdf_fn, 'r': r}
