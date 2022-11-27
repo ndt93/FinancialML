@@ -41,6 +41,8 @@ def implied_underlying_discrete_pdf(
     :param smooth_width: Gaussian filter width for smoothing
     :return: DataFrame estimated PDF for each interpolated strike price
     """
+    if options.shape[0] == 0:
+        return pd.DataFrame(columns=[OptionCol.STRIKE, StatsCol.PDF], dtype=float)
     price_curve = CubicSpline(x=options[OptionCol.STRIKE], y=options[OptionCol.PRICE])
     deriv2 = price_curve.derivative(2)
 
@@ -69,7 +71,7 @@ def implied_underlying_distribution(
     :param puts: DataFrame of call option Strike and Price
     :param t: time to expiry in years
     :param r: risk-free interest rate. If None, estimate from call-put parity
-    :param s0: current underlying asset price. Required if risk-free rate is None
+    :param s0: current underlying asset price.
     :param d: dividend from underlying asset from now til options expiry
     :param n_interpolate: number of interpolated strike prices for estimating discrete pdf.
         If None, default to 3*number_of_strikes
@@ -80,7 +82,7 @@ def implied_underlying_distribution(
     """
     if r is None:
         if s0 is None:
-            raise ValueError('At least r or s0 must not be None')
+            raise ValueError('At least s0 is required to estimate r')
         r, _ = implied_risk_free_rate(calls, puts, s0, t, d=d)
 
     pdf_calls = implied_underlying_discrete_pdf(calls, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
@@ -95,5 +97,5 @@ def implied_underlying_distribution(
         size=kde_samples
     )
     pdf_fn = gaussian_kde(price_samples)
-    pdf_rv = KDERv(pdf_fn)
+    pdf_rv = KDERv(pdf_fn, a=0, xtol=1e-6)
     return pdf_rv, pdf_fn
