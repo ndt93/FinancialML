@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from risk.strategy_risk import (
+from financial_ml.risk.strategy_risk import (
     strategy_sharpe_ratio,
     strategy_required_precision,
     strategy_required_freq,

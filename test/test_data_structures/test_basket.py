@@ -2,8 +2,8 @@ import pandas as pd
 import pytest
 import numpy as np
 
-from data_structures.constants import BarCol, ContractCol
-from data_structures import basket
+from financial_ml.data_structures.constants import BarCol, ContractCol
+from financial_ml.data_structures import basket
 
 futures_df = pd.DataFrame({
     BarCol.TIMESTAMP: pd.to_datetime([f'2022-01-{i:02d}' for i in range(1, 11)]),

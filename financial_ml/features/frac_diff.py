@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import adfuller
 
-from data_structures.constants import StatsCol
+from financial_ml.data_structures.constants import StatsCol
 
 
 def _get_weights(order: float, size: int) -> np.ndarray:

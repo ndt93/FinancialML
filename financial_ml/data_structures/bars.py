@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from data_structures.constants import TickCol, BarCol, BarUnit
-from features.microstructure import tick_rule
-from utils.time_series import fast_ewma
+from financial_ml.data_structures.constants import TickCol, BarCol, BarUnit
+from financial_ml.features.microstructure import tick_rule
+from financial_ml.utils.time_series import fast_ewma
 
 
 def _compute_vwap(ticks):

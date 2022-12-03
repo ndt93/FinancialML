@@ -2,8 +2,8 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from data_structures.constants import OptionCol
-from tools.option import (
+from financial_ml.data_structures.constants import OptionCol
+from financial_ml.tools.option import (
     implied_risk_free_rate,
     implied_underlying_distribution,
 )
@@ -24,7 +24,7 @@ def _fmt_data(options):
 
 @pytest.fixture
 def data():
-    dir = '../'
+    dir = '../..'
     calls = _fmt_data(pd.read_csv(f'{dir}/data/SPY221202C.csv'))
     puts = _fmt_data(pd.read_csv(f'{dir}/data/SPY221202P.csv'))
     return calls, puts, 402.33, 7/365, 0.0
@@ -38,11 +38,14 @@ def test_implied_risk_free_rate(data):
 
 def test_implied_underlying_distribution(data):
     calls, puts, s0, t, d = data
-    rv, pdf = implied_underlying_distribution(
+    out = implied_underlying_distribution(
         calls, puts, t, r=None, s0=s0, d=d, n_interpolate=None, smooth_width=1e-3, random_state=42
     )
+    print(out)
+    rv, pdf = out['rv'], out['pdf']
     cdf_samples = rv.cdf([386, 392, 405, 406])
     pdf_samples = pdf(range(400, 410))
+    assert out['r'] == pytest.approx(0.03744, abs=1e-3)
     np.testing.assert_array_almost_equal(cdf_samples, [0.00910268, 0.03869389, 0.59954005, 0.70131879])
     np.testing.assert_array_almost_equal(pdf_samples, [0.05012719, 0.02175576, 0.02381988, 0.05210559,
                                                        0.07070455, 0.08096232, 0.12420206, 0.12058565,

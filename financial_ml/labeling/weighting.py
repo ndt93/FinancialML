@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from data_structures.constants import EventCol
+from financial_ml.data_structures.constants import EventCol
 
 
 def drop_rare_labels(events: pd.DataFrame, min_pct=0.05, min_classes=2) -> pd.DataFrame:

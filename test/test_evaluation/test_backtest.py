@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from scipy.stats import norm
 
-from evaluation.backtest import compute_pbo
+from financial_ml.evaluation.backtest import compute_pbo
 
 
 @pytest.fixture

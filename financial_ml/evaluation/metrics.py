@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy.stats import skew, kurtosis, norm
 
-from data_structures.constants import PortfolioCol
+from financial_ml.data_structures.constants import PortfolioCol
 
 
 class Metrics:

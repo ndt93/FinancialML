@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 from scipy.stats import norm
 
-from data_structures.constants import PortfolioCol
-from evaluation.metrics import (
+from financial_ml.data_structures.constants import PortfolioCol
+from financial_ml.evaluation.metrics import (
     get_position_timings,
     compute_holding_period,
     compute_time_weighted_return,

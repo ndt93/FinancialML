@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 
-from data_structures.constants import TickCol, BarCol, QuoteCol
+from financial_ml.data_structures.constants import TickCol, BarCol, QuoteCol
 
 
 def tick_rule(ticks: pd.DataFrame, b0: float = 1):

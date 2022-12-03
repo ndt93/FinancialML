@@ -3,9 +3,9 @@ import pandas as pd
 from scipy.stats import norm
 from sklearn.mixture import GaussianMixture
 
-from data_structures.constants import EventCol, PositionCol
-from labeling.weighting import count_events_per_bar
-from utils.data import fill_index
+from financial_ml.data_structures.constants import EventCol, PositionCol
+from financial_ml.labeling.weighting import count_events_per_bar
+from financial_ml.utils.data import fill_index
 
 
 def gaussian_mixture_position_size(bar_times, event_times, sides, **kwargs):

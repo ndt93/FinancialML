@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from features.entropy import (
+from financial_ml.features.entropy import (
     binary_encode,
     QuantileEncoder,
     sigma_encode,

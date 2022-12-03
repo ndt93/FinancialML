@@ -3,7 +3,7 @@ from itertools import combinations, chain
 import pytest
 import pandas as pd
 
-from evaluation.backtest import CombinatorialPurgedCV
+from financial_ml.evaluation.backtest import CombinatorialPurgedCV
 
 
 @pytest.fixture

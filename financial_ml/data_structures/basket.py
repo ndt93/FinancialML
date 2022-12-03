@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from data_structures.constants import BarCol
+from financial_ml.data_structures.constants import BarCol
 
 """
 This module implements several methods to transform price series of complex basket of securities with dynamic

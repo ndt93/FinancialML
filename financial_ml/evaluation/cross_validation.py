@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.metrics import log_loss, accuracy_score
 from sklearn.model_selection._split import _BaseKFold
 
-from evaluation.metrics import Metrics
+from financial_ml.evaluation.metrics import Metrics
 
 
 def _get_purged_train_times(event_times: pd.Series, test_times: pd.Series) -> pd.Series:
