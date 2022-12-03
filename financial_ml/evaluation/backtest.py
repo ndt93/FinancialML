@@ -4,9 +4,9 @@ import numpy as np
 from scipy.stats import gaussian_kde
 import pandas as pd
 
-from evaluation.metrics import sharpe_ratio
-from evaluation.cross_validation import apply_purging_and_embargo
-from utils.stats import KDERv
+from financial_ml.evaluation.metrics import sharpe_ratio
+from financial_ml.evaluation.cross_validation import apply_purging_and_embargo
+from financial_ml.utils.stats import KDERv
 
 
 def compute_pbo(perm_matrix: np.ndarray, eval_fn=sharpe_ratio, n_partitions=10):

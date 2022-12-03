@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
-from utils.simulation import gen_mixed_gaussians
+from financial_ml.utils.simulation import gen_mixed_gaussians
 
 
 def strategy_sharpe_ratio(p, freq, profit, loss):

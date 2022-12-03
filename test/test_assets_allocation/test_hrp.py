@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from assets_allocation import HRP
+from financial_ml.assets_allocation import HRP
 
 
 def generate_data(n_obs, n_factors, n_instruments, sigma):

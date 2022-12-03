@@ -1,8 +1,8 @@
 import pandas as pd
 import pytest
 
-from data_structures.constants import BarCol
-from features.frac_diff import frac_diff_expanding, frac_diff_fixed, run_adf_tests
+from financial_ml.data_structures.constants import BarCol
+from financial_ml.features.frac_diff import frac_diff_expanding, frac_diff_fixed, run_adf_tests
 
 
 @pytest.fixture

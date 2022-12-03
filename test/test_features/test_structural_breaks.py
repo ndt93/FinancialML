@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.stats import norm
 import pytest
 
-from features.structural_breaks import (
+from financial_ml.features.structural_breaks import (
     recursive_residuals_cusum_stats,
     levels_cusum_stats,
     _get_lag_df,

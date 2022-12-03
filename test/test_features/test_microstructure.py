@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from data_structures.constants import TickCol, QuoteCol, BarCol
-from data_structures.bars import aggregate_time_bars, aggregate_volume_bars
-from features.microstructure import (
+from financial_ml.data_structures.constants import TickCol, QuoteCol, BarCol
+from financial_ml.data_structures.bars import aggregate_time_bars, aggregate_volume_bars
+from financial_ml.features.microstructure import (
     tick_rule,
     roll_effective_spread,
     high_low_volatility,
@@ -15,7 +15,7 @@ from features.microstructure import (
     hasbrouck_lambda,
     volume_synchronized_pin
 )
-from utils.simulation import gen_geometric_brownian
+from financial_ml.utils.simulation import gen_geometric_brownian
 
 
 def test_tick_rule():

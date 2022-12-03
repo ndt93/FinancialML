@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import log_loss, accuracy_score
 
-from evaluation import Metrics, PurgedKFold
-from evaluation.cross_validation import timeseries_cv_score
+from financial_ml.evaluation.metrics import Metrics
+from financial_ml.evaluation.cross_validation import timeseries_cv_score, PurgedKFold
 
 
 def get_mean_decrease_impurity(model, feature_names: list[str]):

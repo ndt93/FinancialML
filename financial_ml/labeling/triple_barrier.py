@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from data_structures.constants import EventCol
+from financial_ml.data_structures.constants import EventCol
 
 
 def _get_barrier_break_times(prices: pd.Series, events: pd.DataFrame, multipliers: (float, float)) -> pd.DataFrame:

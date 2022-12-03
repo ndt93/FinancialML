@@ -4,8 +4,8 @@ import pandas as pd
 import pytest
 import numpy as np
 
-from data_structures.constants import EventCol, BarCol
-from labeling.weighting import (
+from financial_ml.data_structures.constants import EventCol, BarCol
+from financial_ml.labeling.weighting import (
     drop_rare_labels,
     label_avg_uniqueness,
     get_event_indicators,

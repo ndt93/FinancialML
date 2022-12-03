@@ -4,15 +4,15 @@ from sklearn.datasets import make_classification
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import BaggingClassifier
 
-from evaluation import PurgedKFold
-from evaluation.cross_validation import timeseries_cv_score
-from explain.feature_importance import (
+from financial_ml.evaluation.cross_validation import timeseries_cv_score, PurgedKFold
+from financial_ml.explain.feature_importance import (
     get_mean_decrease_impurity,
     get_mean_decrease_accuracy,
     get_single_feature_importance
 )
 
 
+# TODO: Tests taking too long. To simplify
 def get_test_data(n_features=40, n_informative=10, n_redundant=10, n_samples=10000):
     X, y = make_classification(
         n_samples=n_samples, n_features=n_features,

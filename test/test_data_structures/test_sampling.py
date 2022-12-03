@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from events.filters import filter_symmetric_cusum
+from financial_ml.events.filters import filter_symmetric_cusum
 
 
 def test_symmetric_cumsum_filter():

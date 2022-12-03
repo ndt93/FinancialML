@@ -1,7 +1,7 @@
 import pandas as pd
 
-from data_structures.constants import BarCol, EventCol
-from labeling.triple_barrier import get_event_end_times, get_event_labels
+from financial_ml.data_structures.constants import BarCol, EventCol
+from financial_ml.labeling.triple_barrier import get_event_end_times, get_event_labels
 
 prices = pd.DataFrame({
     BarCol.TIMESTAMP: pd.to_datetime([f'2022-01-{i:02d}' for i in range(1, 21)]),
