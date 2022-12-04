@@ -16,6 +16,7 @@ class BarCol:
     CLOSE = 'Close'
     VOLUME = 'Volume'
     VWAP = 'VWAP'
+    TXN = 'Txn'
 
     RET_PRICES = 'rPrice'
     DIVIDEND = 'Dividend'
