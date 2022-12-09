@@ -22,6 +22,8 @@ def implied_risk_free_rate(calls: pd.DataFrame, puts: pd.DataFrame, s0: float, t
     calls = calls[[OptionCol.STRIKE, OptionCol.PRICE]]
     puts = puts[[OptionCol.STRIKE, OptionCol.PRICE]]
     callput = calls.merge(puts, on=OptionCol.STRIKE, how='outer', suffixes=['_c', '_p']).dropna()
+    if callput.shape == 0:
+        return None, None
     rf_rates = (callput[f'{OptionCol.PRICE}_p'] + s0 - callput[f'{OptionCol.PRICE}_c'] - d)
     rf_rates = -np.log(rf_rates/callput[OptionCol.STRIKE])/t
     rf_rates.index = callput[OptionCol.STRIKE]
