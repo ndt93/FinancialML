@@ -165,6 +165,7 @@ def binom_option_price(
     :param is_futures: if pricing a futures option
     :param n: number of steps in the binomial tree
     """
+    # TODO: support dollar dividends & multiple dividend yields
     if is_futures:
         div_yield = r
     delta_t = T/n
@@ -174,6 +175,7 @@ def binom_option_price(
     p = (a - d)/(u - d)
     v = [[0.0 for _ in range(i + 1)] for i in range(n + 1)]
 
+    # TODO: user vectorized ops
     for j in range(n + 1):
         if option_type == OptionType.CALL:
             v[n][j] = max(s0*(u**j)*(d**(n-j)) - k, 0.0)
@@ -185,11 +187,12 @@ def binom_option_price(
     for i in range(n - 1, -1, -1):
         for j in range(i + 1):
             v_hold = np.exp(-r*delta_t)*(p*v[i+1][j+1] + (1-p)*v[i+1][j])
+            s = s0*(u**j)*(d**(i - j))
             if exercise_style == OptionType.AMERICAN:
                 if option_type == OptionType.CALL:
-                    v_ex = np.maximum(s0 - k, 0)
+                    v_ex = np.maximum(s - k, 0)
                 elif option_type == OptionType.PUT:
-                    v_ex = np.maximum(k - s0, 0)
+                    v_ex = np.maximum(k - s, 0)
                 else:
                     raise NotImplementedError('Option type', option_type.value)
             elif exercise_style == OptionType.EUROPEAN:

@@ -7,7 +7,8 @@ from financial_ml.tools.option import (
     implied_risk_free_rate,
     implied_underlying_distribution,
     bsm_option_price,
-    implied_volatility
+    implied_volatility,
+    binom_am_option_price
 )
 
 
@@ -77,5 +78,33 @@ def test_bsm_option_pricing():
     price = bsm_option_price(OptionType.PUT, 500, 550, 0.03, 0.2, 9/12, is_futures=True)
     assert price == pytest.approx(65.083365, abs=1e-4)
 
+
+def test_binom_option_pricing():
+    price = binom_am_option_price(OptionType.PUT, 50, 50, 5/12, 0.1, 0.4, n=5)
+    assert price == pytest.approx(4.48845, abs=1e-3)
+
+    price = binom_am_option_price(OptionType.PUT, 50, 50, 5/12, 0.1, 0.4, n=100)
+    assert price == pytest.approx(4.278, abs=1e-3)
+
+    price = binom_am_option_price(OptionType.PUT, 300, 300, 4/12, 0.08, 0.3, is_futures=True)
+    assert price == pytest.approx(20.22, abs=1e-2)
+
+    price = binom_am_option_price(OptionType.PUT, 1.61, 1.6, 1, 0.08, 0.12, div_yield=0.09)
+    assert price == pytest.approx(0.0738, abs=1e-3)
+
+    price = binom_am_option_price(OptionType.PUT, 50, 50, 5/12, 0.1, 0.4, n=5, control_variates=True)
+    assert price == pytest.approx(4.25, abs=1e-2)
+
+    price = binom_am_option_price(OptionType.CALL, 50, 50, 5/12, 0.1, 0.4, n=500)
+    bsm_eur_price = bsm_option_price(OptionType.CALL, 50, 50, 0.1, 0.4, 5/12)
+    assert price == pytest.approx(bsm_eur_price, abs=1e-2)
+
+
+def test_implied_volatility():
     iv = implied_volatility(observed_price=2.5, option_type=OptionType.CALL, s0=15, k=13, r=0.05, T=3/12)
     assert iv == pytest.approx(0.3964355, abs=1e-4)
+
+    iv = implied_volatility(
+        observed_price=4.278, pricing_fn=binom_am_option_price, option_type=OptionType.PUT, s0=50, k=50, r=0.1, T=5/12
+    )
+    assert iv == pytest.approx(0.4, abs=1e-2)

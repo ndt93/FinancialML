@@ -7,5 +7,5 @@ def interpolate_yield_curve(term_structure: [(float, float)]):
     """
     x = [i[0] for i in term_structure]
     y = [i[1] for i in term_structure]
-    spline = CubicSpline(x, y)
-    return spline
+    curve = CubicSpline(x, y)
+    return curve
