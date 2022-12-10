@@ -1,10 +1,11 @@
-from scipy.interpolate import CubicSpline
 import numpy as np
 import pandas as pd
 from scipy.ndimage import gaussian_filter1d
-from scipy.stats import gaussian_kde
+from scipy.stats import gaussian_kde, norm
+from scipy.interpolate import CubicSpline
+from scipy.optimize import brentq
 
-from financial_ml.data_structures.constants import OptionCol, StatsCol
+from financial_ml.data_structures.constants import OptionCol, StatsCol, OptionType
 from financial_ml.utils.stats import KDERv
 
 
@@ -101,3 +102,65 @@ def implied_underlying_distribution(
     pdf_fn = gaussian_kde(price_samples)
     pdf_rv = KDERv(pdf_fn, a=0, xtol=1e-6)
     return {'rv': pdf_rv, 'pdf': pdf_fn, 'r': r}
+
+
+# Black-Scholes-Merton EUR Option Pricing
+def _bsm_d1(s0, k, r, sigma, t, div_yield=0):
+    return (np.log(s0/k) + (r - div_yield + sigma**2/2)*t)/(sigma * np.sqrt(t))
+
+
+def _bsm_d2(s0, k, r, sigma, t, div_yield=0):
+    return _bsm_d1(s0, k, r, sigma, t, div_yield=div_yield) - sigma * np.sqrt(t)
+
+
+def bsm_option_price(option_type: OptionType, s0, k, r, sigma, T, divs=None, div_yield=0, is_futures=False):
+    """
+    European option pricing using Black-Scholes-Merton model
+
+    :param option_type:
+    :param s0: current underlying spot price
+    :param k: strike price
+    :param r: risk-free interest rate
+    :param sigma: volatility
+    :param T: time to maturity in years
+    :param divs: list of (dividend amount, time to ex-dividend date in years)
+    :param div_yield: continuous dividend yield
+    :param is_futures: if pricing a futures option
+    """
+    assert divs is None or div_yield == 0
+    if divs is not None:
+        divs_present = sum([v*np.exp(-r*e) for v, e in divs])
+        s0 -= divs_present
+    if is_futures:
+        assert div_yield is None or div_yield == r
+        div_yield = r
+
+    d1 = _bsm_d1(s0, k, r, sigma, T, div_yield=div_yield)
+    d2 = _bsm_d2(s0, k, r, sigma, T, div_yield=div_yield)
+    if option_type == OptionType.CALL:
+        call = s0 * np.exp(-div_yield*T) * norm.cdf(d1) - k * np.exp(-r*T) * norm.cdf(d2)
+        return call
+    elif option_type == OptionType.PUT:
+        put = -s0 * np.exp(-div_yield*T) * norm.cdf(-d1) + k * np.exp(-r * T) * norm.cdf(-d2)
+        return put
+    else:
+        raise NotImplementedError('Option type', option_type.value)
+
+
+def implied_volatility(
+        observed_price, pricing_fn=bsm_option_price,
+        lower_bound=0.01, upper_bound=1.0, maxiter=100,
+        **kwargs
+):
+    """
+    Get implied volatility for an observed option price
+    :param observed_price:
+    :param pricing_fn: the option pricing function
+    :param lower_bound: low bracket of interval for root finding
+    :param upper_bound: high bracket of interval for root finding
+    :param maxiter: number of iterations for root finding
+    :param kwargs: arguments to the option pricing function
+    """
+    f = lambda sigma: pricing_fn(sigma=sigma, **kwargs) - observed_price
+    x0, _ = brentq(f, a=lower_bound, b=upper_bound, maxiter=maxiter)
+    return x0

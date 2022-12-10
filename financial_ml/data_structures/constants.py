@@ -77,3 +77,10 @@ class OptionCol:
 
     STRIKE = 'Strike'
     PRICE = 'Price'
+
+
+@unique
+class OptionType(Enum):
+
+    CALL = 'Call'
+    PUT = 'Put'
