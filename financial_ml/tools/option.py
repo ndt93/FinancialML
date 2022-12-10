@@ -118,7 +118,7 @@ def bsm_option_price(option_type: OptionType, s0, k, r, sigma, T, divs=None, div
     European option pricing using Black-Scholes-Merton model
 
     :param option_type:
-    :param s0: current underlying spot price
+    :param s0: current underlying instrument price
     :param k: strike price
     :param r: risk-free interest rate
     :param sigma: volatility
@@ -132,7 +132,6 @@ def bsm_option_price(option_type: OptionType, s0, k, r, sigma, T, divs=None, div
         divs_present = sum([v*np.exp(-r*e) for v, e in divs])
         s0 -= divs_present
     if is_futures:
-        assert div_yield is None or div_yield == r
         div_yield = r
 
     d1 = _bsm_d1(s0, k, r, sigma, T, div_yield=div_yield)
@@ -162,5 +161,5 @@ def implied_volatility(
     :param kwargs: arguments to the option pricing function
     """
     f = lambda sigma: pricing_fn(sigma=sigma, **kwargs) - observed_price
-    x0, _ = brentq(f, a=lower_bound, b=upper_bound, maxiter=maxiter)
+    x0 = brentq(f, a=lower_bound, b=upper_bound, maxiter=maxiter)
     return x0

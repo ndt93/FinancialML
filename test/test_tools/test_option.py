@@ -2,10 +2,12 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from financial_ml.data_structures.constants import OptionCol
+from financial_ml.data_structures.constants import OptionCol, OptionType
 from financial_ml.tools.option import (
     implied_risk_free_rate,
     implied_underlying_distribution,
+    bsm_option_price,
+    implied_volatility
 )
 
 
@@ -50,3 +52,30 @@ def test_implied_underlying_distribution(data):
     np.testing.assert_array_almost_equal(pdf_samples, [0.05012719, 0.02175576, 0.02381988, 0.05210559,
                                                        0.07070455, 0.08096232, 0.12420206, 0.12058565,
                                                        0.05888099, 0.01748028])
+
+
+def test_bsm_option_pricing():
+    price = bsm_option_price(
+        OptionType.CALL, s0=1.3, k=1.347, r=0.04, sigma=0.15, T=3/12, div_yield=0.05
+    )
+    assert price == pytest.approx(0.0191968, abs=1e-4)
+
+    price = bsm_option_price(
+        OptionType.PUT, s0=1000, k=1000, r=0.05, sigma=0.15, T=10, div_yield=0.01
+    )
+    assert price == pytest.approx(38.4597, abs=1e-4)
+
+    price = bsm_option_price(OptionType.CALL, 60, 60, 0.05, 0.22, 6, divs=[(1, 0.5 + i) for i in range(6)])
+    assert price == pytest.approx(16.49211, abs=1e-4)
+
+    price = bsm_option_price(OptionType.PUT, 50, 50, 0.1, 0.3, 0.25, divs=[(1.5, 2/12)])
+    assert price == pytest.approx(3.030194, abs=1e-4)
+
+    price = bsm_option_price(OptionType.CALL, 500, 550, 0.03, 0.2, 9/12, is_futures=True)
+    assert price == pytest.approx(16.195803, abs=1e-4)
+
+    price = bsm_option_price(OptionType.PUT, 500, 550, 0.03, 0.2, 9/12, is_futures=True)
+    assert price == pytest.approx(65.083365, abs=1e-4)
+
+    iv = implied_volatility(observed_price=2.5, option_type=OptionType.CALL, s0=15, k=13, r=0.05, T=3/12)
+    assert iv == pytest.approx(0.3964355, abs=1e-4)
