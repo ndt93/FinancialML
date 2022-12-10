@@ -74,13 +74,14 @@ class QuoteCol:
 
 
 class OptionCol:
-
     STRIKE = 'Strike'
     PRICE = 'Price'
 
 
 @unique
 class OptionType(Enum):
-
     CALL = 'Call'
     PUT = 'Put'
+
+    AMERICAN = 'AM'
+    EUROPEAN = 'EUR'

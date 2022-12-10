@@ -146,6 +146,92 @@ def bsm_option_price(option_type: OptionType, s0, k, r, sigma, T, divs=None, div
         raise NotImplementedError('Option type', option_type.value)
 
 
+# Binomial Option Pricing
+def binom_option_price(
+        option_type: OptionType, exercise_style: OptionType,
+        s0, k, T, r, sigma, div_yield=0, is_futures=False, n=100
+):
+    """
+    American option pricing using binomial tree
+
+    :param option_type: call or put
+    :param exercise_style: american or european
+    :param s0: current underlying instrument price
+    :param k: strike price
+    :param r: risk-free interest rate
+    :param sigma: volatility
+    :param T: time to maturity in years
+    :param div_yield: continuous dividend yield
+    :param is_futures: if pricing a futures option
+    :param n: number of steps in the binomial tree
+    """
+    if is_futures:
+        div_yield = r
+    delta_t = T/n
+    u = np.exp(sigma * np.sqrt(delta_t))
+    d = 1/u
+    a = np.exp((r - div_yield)*delta_t)
+    p = (a - d)/(u - d)
+    v = [[0.0 for _ in range(i + 1)] for i in range(n + 1)]
+
+    for j in range(n + 1):
+        if option_type == OptionType.CALL:
+            v[n][j] = max(s0*(u**j)*(d**(n-j)) - k, 0.0)
+        elif option_type == OptionType.PUT:
+            v[n][j] = max(k - s0*(u**j)*(d**(n-j)), 0.0)
+        else:
+            raise NotImplementedError('Option type', option_type.value)
+
+    for i in range(n - 1, -1, -1):
+        for j in range(i + 1):
+            v_hold = np.exp(-r*delta_t)*(p*v[i+1][j+1] + (1-p)*v[i+1][j])
+            if exercise_style == OptionType.AMERICAN:
+                if option_type == OptionType.CALL:
+                    v_ex = np.maximum(s0 - k, 0)
+                elif option_type == OptionType.PUT:
+                    v_ex = np.maximum(k - s0, 0)
+                else:
+                    raise NotImplementedError('Option type', option_type.value)
+            elif exercise_style == OptionType.EUROPEAN:
+                v_ex = 0
+            else:
+                raise NotImplementedError('Exercise style', exercise_style.value)
+            v[i][j] = np.maximum(v_hold, v_ex)
+
+    return v[0][0]
+
+
+def binom_am_option_price(
+        option_type: OptionType, s0, k, T, r, sigma, div_yield=0,
+        is_futures=False, n=100, control_variates=False
+):
+    """
+    American option pricing using binomial tree, with optional adjustment using control variates
+
+    :param option_type: call or put
+    :param s0: current underlying instrument price
+    :param k: strike price
+    :param r: risk-free interest rate
+    :param sigma: volatility
+    :param T: time to maturity in years
+    :param div_yield: continuous dividend yield
+    :param is_futures: if pricing a futures option
+    :param n: number of steps in the binomial tree
+    :param control_variates: adjust AM option price from the error between EUR binomial price vs BSM price
+    """
+    binom_am_price = binom_option_price(
+        option_type, OptionType.AMERICAN, s0, k, T, r, sigma, div_yield=div_yield, is_futures=is_futures, n=n
+    )
+    if not control_variates:
+        return binom_am_price
+    binom_eur_price = binom_option_price(
+        option_type, OptionType.EUROPEAN, s0, k, T, r, sigma, div_yield=div_yield, is_futures=is_futures, n=n
+    )
+    bsm_eur_price = bsm_option_price(option_type, s0, k, r, sigma, T, div_yield=div_yield, is_futures=is_futures)
+    adj_binom_am_price = binom_am_price + (bsm_eur_price - binom_eur_price)
+    return adj_binom_am_price
+
+
 def implied_volatility(
         observed_price, pricing_fn=bsm_option_price,
         lower_bound=0.01, upper_bound=1.0, maxiter=100,
