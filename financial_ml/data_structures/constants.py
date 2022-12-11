@@ -69,11 +69,14 @@ class PortfolioCol:
 class QuoteCol:
     BID = 'Bid'
     ASK = 'Ask'
+    MID = 'Mid'
     SPREAD = 'Spread'
     START_TIME = 'Start_Time'
 
 
 class OptionCol:
+    EXPIRY = 'Expiry'
+    TYPE = 'Type'
     STRIKE = 'Strike'
     PRICE = 'Price'
 
