@@ -86,11 +86,16 @@ def implied_underlying_distribution(
     if r is None:
         if s0 is None:
             raise ValueError('At least s0 is required to estimate r')
+        if puts is None:
+            raise ValueError('Both calls and puts must be provided to estimate r')
         r, _ = implied_risk_free_rate(calls, puts, s0, t, d=d)
 
     pdf_calls = implied_underlying_discrete_pdf(calls, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
-    pdf_puts = implied_underlying_discrete_pdf(puts, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
-    pdf = pd.concat([pdf_calls, pdf_puts], axis=0)
+    if puts is not None:
+        pdf_puts = implied_underlying_discrete_pdf(puts, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
+        pdf = pd.concat([pdf_calls, pdf_puts], axis=0)
+    else:
+        pdf = pdf_calls
 
     if random_state is not None:
         np.random.seed(random_state)
