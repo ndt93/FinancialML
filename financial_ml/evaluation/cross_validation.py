@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics import log_loss, accuracy_score
-from sklearn.model_selection._split import _BaseKFold
 
 from financial_ml.evaluation.metrics import Metrics
 
@@ -69,29 +68,35 @@ def apply_purging_and_embargo(
     return train_times
 
 
-class PurgedKFold(_BaseKFold):
+class PurgedKFold:
     """
-    Perform KFold splitting on time series for cross validation, supporting labels that span across intervals.
+    KFold splitting on time series for cross validation, supporting labels that span across intervals.
     Purge observations in train set with labels that overlap with test set's labels.
-    Assume test set is contiguous (no training samples in between) i.e. shuffle = False and
-    events are assumed to be uniquely identified by their start times.
+    Apply a gap between train set that follows a test set based on an embargo parameter to prevent leakage
+    from serial correlations.
     """
 
-    def __init__(self, n_splits=3, event_times: pd.Series=None, embargo_pct=0.):
+    def __init__(self, n_splits=3, embargo_pct=0.):
         """
         :param n_splits: number of k-fold splits
-        :param event_times: a Series of event end times indexed by event start time.
-            An event defines the interval that each label spans
-        :param embargo_pct: Used to prevent leakage from serial correlation. see apply_purging_and_embargo function
+        :param embargo_pct: % of observations to discard from a train set that follows a test set.
+            % is over the entire dataset and not just the train set.
         """
-        if not isinstance(event_times, pd.Series):
-            raise ValueError('event_times must be a pandas Series')
-        super(PurgedKFold, self).__init__(n_splits, shuffle=False, random_state=None)
-        self.event_times = event_times
+        self.n_splits = n_splits
         self.embargo_pct = embargo_pct
 
-    def split(self, X, y=None, groups=None):
-        if (X.index == self.event_times.index).sum() != len(self.event_times):
+    def split(self, X: pd.DataFrame, event_times: pd.Series, groups=None):
+        """
+        :param X: features DataFrame. Must have the same index as event_times
+        :param event_times: a Series of event end times indexed by event start time.
+            An event defines the interval that each label spans.
+        :param groups: placeholder. groups are not yet implemented
+        :return: (train indices, test indices)
+        """
+        # TODO: support groups
+        if not isinstance(event_times, pd.Series):
+            raise ValueError('event_times must be a pandas Series')
+        if (X.index == event_times.index).sum() != len(event_times):
             raise ValueError('X and event_times must have the same index')
 
         num_obs = X.shape[0]
@@ -101,15 +106,14 @@ class PurgedKFold(_BaseKFold):
 
         for i, j in test_splits:
             test_indices = indices[i:j]
-            test_start_time = self.event_times.index[i]
-            test_end_time = self.event_times.iloc[test_indices].max()
-            test_end_time_idx = self.event_times.index.searchsorted(test_end_time)
+            test_start_time = event_times.index[i]
+            train_1_indices = indices[event_times < test_start_time]
+            train_indices = train_1_indices
 
-            train_start_times = self.event_times[self.event_times <= test_start_time].index
-            train_indices = self.event_times.index.searchsorted(train_start_times)
-
-            if test_end_time_idx < X.shape[0]:
-                train_indices = np.concatenate((train_indices, indices[test_end_time_idx + embargo:]))
+            test_end_time = event_times.iloc[test_indices].max()
+            train_2_start_idx = event_times.index.searchsorted(test_end_time, side='right') + 1
+            if train_2_start_idx < X.shape[0]:
+                train_indices = np.concatenate((train_1_indices, indices[train_2_start_idx + embargo:]))
 
             yield train_indices, test_indices
 
@@ -136,10 +140,10 @@ def timeseries_cv_score(
     if scoring not in ['neg_log_loss', 'accuracy']:
         raise NotImplementedError(f'scoring: {scoring}')
     if cv_splitter is None:
-        cv_splitter = PurgedKFold(n_splits=cv, event_times=event_times, embargo_pct=embargo_pct)
+        cv_splitter = PurgedKFold(n_splits=cv, embargo_pct=embargo_pct)
 
     scores = []
-    for train_indices, test_indices in cv_splitter.split(X):
+    for train_indices, test_indices in cv_splitter.split(X, event_times=event_times):
         X_train = X.iloc[train_indices, :]
         y_train = y.iloc[train_indices]
         train_sample_weight = sample_weight.iloc[train_indices].values

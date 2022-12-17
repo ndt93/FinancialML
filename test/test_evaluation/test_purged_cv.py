@@ -41,10 +41,10 @@ def test_apply_embargo(event_times):
 
 def test_purged_kfold(event_times):
     n_splits = 3
-    kfold = PurgedKFold(n_splits=n_splits, event_times=event_times, embargo_pct=0)
+    kfold = PurgedKFold(n_splits=n_splits, embargo_pct=0)
 
     X = pd.DataFrame(range(10), index=event_times.index)
-    splits = list(kfold.split(X))
+    splits = list(kfold.split(X, event_times=event_times))
     assert len(splits) == n_splits
 
     for train_indices, test_indices in splits:
@@ -62,13 +62,15 @@ def test_purged_kfold(event_times):
 
 def test_purged_kfold_embargo(event_times):
     n_splits = 3
-    kfold = PurgedKFold(n_splits=n_splits, event_times=event_times, embargo_pct=0.1)
+    kfold = PurgedKFold(n_splits=n_splits, embargo_pct=0.1)
 
     X = pd.DataFrame(range(10), index=event_times.index)
-    splits = list(kfold.split(X))
+    splits = list(kfold.split(X, event_times=event_times))
     assert len(splits) == n_splits
 
     train_split_1 = splits[0][0]
     test_split_1 = splits[0][1]
-    np.testing.assert_equal(train_split_1, [5, 6, 7, 8, 9])
+    print()
+    print(event_times)
     np.testing.assert_array_equal(test_split_1, [0, 1, 2, 3])
+    np.testing.assert_equal(train_split_1, [6, 7, 8, 9])
