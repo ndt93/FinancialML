@@ -24,27 +24,24 @@ def event_times():
 def test_apply_purging(event_times):
     test_indices = [(8, 10), (18, 22)]
     test_times = indices_to_intervals(test_indices)
-    train_times = apply_purging_and_embargo(event_times, test_times)
+    train_indices = apply_purging_and_embargo(event_times, test_times)
     expected_train_indices = [0, 1, 4, 8]
-    expected_train_times = event_times.iloc[expected_train_indices]
-    pd.testing.assert_series_equal(train_times, expected_train_times)
+    np.testing.assert_array_equal(train_indices, expected_train_indices)
 
 
 def test_apply_embargo(event_times):
     test_indices = [(8, 10), (18, 22)]
     test_times = indices_to_intervals(test_indices)
-    train_times = apply_purging_and_embargo(event_times, test_times, bar_times=days.values, embargo_pct=0.1)
+    train_indices = apply_purging_and_embargo(event_times, test_times, bar_times=days.values, embargo_pct=0.1)
     expected_train_indices = [0, 1]
-    expected_train_times = event_times.iloc[expected_train_indices]
-    pd.testing.assert_series_equal(train_times, expected_train_times)
+    np.testing.assert_array_equal(train_indices, expected_train_indices)
 
 
 def test_purged_kfold(event_times):
     n_splits = 3
     kfold = PurgedKFold(n_splits=n_splits, embargo_pct=0)
 
-    X = pd.DataFrame(range(10), index=event_times.index)
-    splits = list(kfold.split(X, event_times=event_times))
+    splits = list(kfold.split(event_times))
     assert len(splits) == n_splits
 
     for train_indices, test_indices in splits:
@@ -64,13 +61,10 @@ def test_purged_kfold_embargo(event_times):
     n_splits = 3
     kfold = PurgedKFold(n_splits=n_splits, embargo_pct=0.1)
 
-    X = pd.DataFrame(range(10), index=event_times.index)
-    splits = list(kfold.split(X, event_times=event_times))
+    splits = list(kfold.split(event_times))
     assert len(splits) == n_splits
 
     train_split_1 = splits[0][0]
     test_split_1 = splits[0][1]
-    print()
-    print(event_times)
     np.testing.assert_array_equal(test_split_1, [0, 1, 2, 3])
     np.testing.assert_equal(train_split_1, [6, 7, 8, 9])

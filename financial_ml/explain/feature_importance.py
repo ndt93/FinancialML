@@ -56,7 +56,7 @@ def get_mean_decrease_accuracy(
     scores = pd.Series(dtype=float)
     perm_scores = pd.DataFrame(columns=X.columns)
 
-    for fold, (train_indices, test_indices) in enumerate(cv_splitter.split(X=X, event_times=event_times)):
+    for fold, (train_indices, test_indices) in enumerate(cv_splitter.split(event_times)):
         X_train = X.iloc[train_indices, :]
         y_train = y.iloc[train_indices]
         w_train = sample_weight.iloc[train_indices]

@@ -80,8 +80,8 @@ class CombinatorialPurgedCV:
 
         self._n_obs = event_times.shape[0]
         self._group_size = self._n_obs / self._n_groups
-        # Lists of split indices where each group was selected for the test set
-        self._split_of_test_group = [[] for _ in range(num_groups)]
+        # Lists of split indices where each group is selected for the test set
+        self._split_of_test_group = [[] for _ in range(num_groups)]  # type: list[list[int]]
 
     def split(self):
         """
@@ -94,8 +94,7 @@ class CombinatorialPurgedCV:
             ))
             test_times = self._event_times.iloc[test_indices]
 
-            train_times = apply_purging_and_embargo(self._event_times, test_times, self._bar_times, self._embargo_pct)
-            train_indices = self._event_times.index.searchsorted(train_times.index)
+            train_indices = apply_purging_and_embargo(self._event_times, test_times, self._bar_times, self._embargo_pct)
 
             for g in test_grps:
                 self._split_of_test_group[g].append(split_idx)
