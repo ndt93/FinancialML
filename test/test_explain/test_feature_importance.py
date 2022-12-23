@@ -56,7 +56,7 @@ def get_feature_importance(
             event_times=event_times, embargo_pct=embargo_pct, scoring=scoring
         )
     elif method == 'SFI':
-        cv_splitter = PurgedKFold(n_splits=cv, event_times=event_times, embargo_pct=embargo_pct)
+        cv_splitter = PurgedKFold(n_splits=cv, embargo_pct=embargo_pct)
         oos = timeseries_cv_score(
             clf, X=X, y=y, sample_weight=sample_weight, scoring=scoring, cv_splitter=cv_splitter
         ).mean()

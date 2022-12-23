@@ -17,7 +17,7 @@ def _compute_vwap(ticks):
     return vwap
 
 
-def _compute_bar_stats(ticks, timestamp='last'):
+def _compute_bar_stats(ticks, timestamp='first'):
     """
     :param ticks: DataFrame of TickCols
     :param timestamp: set to None to exclude timestamp column in the result
@@ -60,42 +60,42 @@ def aggregate_time_bars(ticks: pd.DataFrame, frequency):
     return df_res
 
 
-def aggregate_tick_bars(ticks: pd.DataFrame, frequency: float):
+def aggregate_tick_bars(ticks: pd.DataFrame, freq: float):
     """
     :param ticks: DataFrame of TickCol columns
-    :param frequency: number of trades per bar
+    :param freq: number of trades per bar
     :return: DataFrame of BarCol columns
     """
     df = ticks.reset_index(drop=True)
-    df[TickCol.BAR_ID] = df.index // frequency
+    df[TickCol.BAR_ID] = df.index // freq
     return _group_ticks_to_bars(df)
 
 
-def aggregate_volume_bars(ticks: pd.DataFrame, frequency: float, return_bar_id=False):
+def aggregate_volume_bars(ticks: pd.DataFrame, freq: float, return_bar_id=False):
     """
     :param ticks: DataFrame of TickCol columns
-    :param frequency: volume traded per bar
+    :param freq: volume traded per bar
     :param return_bar_id: return ticks with TickCol.BAR_ID
     :return: DataFrame of BarCol columns, Optional[ticks with TickCol.BAR_ID]
     """
     df = ticks.reset_index(drop=True)
     cm_vol = df[TickCol.VOLUME].cumsum()
-    df[TickCol.BAR_ID] = cm_vol // frequency
+    df[TickCol.BAR_ID] = cm_vol // freq
     res = _group_ticks_to_bars(df)
     if return_bar_id:
         return res, df
     return res
 
 
-def aggregate_dollar_bars(ticks: pd.DataFrame, frequency: float):
+def aggregate_dollar_bars(ticks: pd.DataFrame, freq: float):
     """
     :param ticks: DataFrame of TickCol columns
-    :param frequency: dollars amount traded per bar
+    :param freq: dollars amount traded per bar
     :return: DataFrame of BarCol columns
     """
     df = ticks.reset_index(drop=True)
     cm_dollars = (df[TickCol.VOLUME]*df[TickCol.PRICE]).cumsum()
-    df[TickCol.BAR_ID] = cm_dollars // frequency
+    df[TickCol.BAR_ID] = cm_dollars // freq
     return _group_ticks_to_bars(df)
 
 
@@ -438,5 +438,56 @@ def aggregate_runs_bars(
     res = _group_ticks_to_bars(df)
     if debug:
         df = df.assign(theta=thetas, threshold=thresholds)
+        return res, df
+    return res
+
+
+def _resample_vwap(bars: pd.DataFrame):
+    """
+    :param bars: DataFrame of BarCols
+    :return: volume weighted average price over resampled bars
+    """
+    p = bars[BarCol.VWAP]
+    v = bars[BarCol.VOLUME]
+    vwap = np.sum(p * v) / np.sum(v)
+    return vwap
+
+
+def _resample_bar_stats(bars: pd.DataFrame, timestamp='first'):
+    """
+    :param bars: DataFrame of BarCols
+    :param timestamp: set to None to exclude timestamp column in the result
+        'first' or 'last' to use the timestamp of the first or last tick in the bar
+    :return: DataFrame of BarCol columns
+    """
+    bar_cols = [BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP]
+    bar = pd.Series([
+        bars[BarCol.OPEN].iloc[0],
+        np.max(bars[BarCol.HIGH]),
+        np.min(bars[BarCol.LOW]),
+        bars[BarCol.CLOSE].iloc[-1],
+        np.sum(bars[BarCol.VOLUME]),
+        _resample_vwap(bars)
+    ], index=bar_cols)
+    if timestamp == 'first':
+        bar[BarCol.TIMESTAMP] = bars[BarCol.TIMESTAMP].iloc[0]
+    elif timestamp == 'last':
+        bar[BarCol.TIMESTAMP] = bars[BarCol.TIMESTAMP].iloc[-1]
+    return bar
+
+
+def _group_resampled_bars(df):
+    df_grp = df.groupby(TickCol.BAR_ID)
+    df_res = df_grp.apply(_resample_bar_stats)
+    df_res.set_index(BarCol.TIMESTAMP, inplace=True)
+    return df_res
+
+
+def resample_time_to_volume_bars(bars: pd.DataFrame, freq: float, return_bar_id=False):
+    df = bars.reset_index()
+    cm_vol = df[BarCol.VOLUME].cumsum()
+    df[TickCol.BAR_ID] = cm_vol // freq
+    res = _group_resampled_bars(df)
+    if return_bar_id:
         return res, df
     return res
