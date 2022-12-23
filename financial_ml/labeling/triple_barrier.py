@@ -26,11 +26,11 @@ def _get_barrier_break_times(prices: pd.Series, events: pd.DataFrame, multiplier
     pt_limits = pt_mulp * events[EventCol.TARGET] if pt_mulp > 0 else pd.Series(index=events.index)
     st_limits = -sl_mulp * events[EventCol.TARGET] if sl_mulp > 0 else pd.Series(index=events.index)
 
-    for event_time, event_expiry in events[EventCol.EXPIRY].fillna(prices.index[-1]).iteritems():
-        path_prices = prices[event_time:event_expiry]
-        path_returns = (path_prices/prices.loc[event_time] - 1) * events.at[event_time, EventCol.SIDE]
-        res.loc[event_time, EventCol.PT_TIME] = path_returns[path_returns > pt_limits.loc[event_time]].index.min()
-        res.loc[event_time, EventCol.SL_TIME] = path_returns[path_returns < st_limits.loc[event_time]].index.min()
+    for event_start, event_expiry in events[EventCol.EXPIRY].fillna(prices.index[-1]).iteritems():
+        path_prices = prices[event_start:event_expiry]
+        path_returns = (path_prices/prices.loc[event_start] - 1) * events.at[event_start, EventCol.SIDE]
+        res.loc[event_start, EventCol.PT_TIME] = path_returns[path_returns > pt_limits.loc[event_start]].index.min()
+        res.loc[event_start, EventCol.SL_TIME] = path_returns[path_returns < st_limits.loc[event_start]].index.min()
 
     return res
 

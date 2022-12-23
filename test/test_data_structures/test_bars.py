@@ -1,27 +1,38 @@
+import numpy as np
 import pandas as pd
 import pytest
 
 import financial_ml.data_structures.bars as bars
 from financial_ml.data_structures.constants import BarUnit, BarCol, TickCol
 
-ticks = pd.read_csv('../../data/XBTUSD_20220920.csv')
-ticks = ticks[ticks['symbol'] == 'XBTUSD'][['timestamp', 'price', 'foreignNotional']]
-ticks['timestamp'] = pd.to_datetime(ticks['timestamp'].str.slice(0, -3), format='%Y-%m-%dD%H:%M:%S.%f')
-ticks = ticks.rename(columns={
-    'timestamp': TickCol.TIMESTAMP,
-    'price': TickCol.PRICE,
-    'foreignNotional': TickCol.VOLUME,
-})
-ticks = ticks.reset_index(drop=True)
 
-
-@pytest.fixture
+@pytest.fixture(scope='session')
 def ticks_sample():
-    return ticks.copy()
+    ticks = pd.read_csv('../../data/XBTUSD_20220920.csv')
+    ticks = ticks[ticks['symbol'] == 'XBTUSD'][['timestamp', 'price', 'foreignNotional']]
+    ticks['timestamp'] = pd.to_datetime(ticks['timestamp'].str.slice(0, -3), format='%Y-%m-%dD%H:%M:%S.%f')
+    ticks = ticks.rename(columns={
+        'timestamp': TickCol.TIMESTAMP,
+        'price': TickCol.PRICE,
+        'foreignNotional': TickCol.VOLUME,
+    })
+    ticks = ticks.reset_index(drop=True)
+    return ticks
+
+
+@pytest.fixture(scope='session')
+def bars_sample():
+    bars_sample = pd.read_csv('../../data/SPY_1h_20221222.csv')
+    bars_sample[BarCol.VOLUME] = np.arange(1, bars_sample.shape[0] + 1)
+    bars_sample[BarCol.VWAP] = bars_sample[BarCol.CLOSE]
+    bars_sample[BarCol.TIMESTAMP] = pd.to_datetime(bars_sample['Datetime'])
+    bars_sample = bars_sample.drop(columns=['Adj Close'])
+    bars_sample = bars_sample.set_index(BarCol.TIMESTAMP)
+    return bars_sample
 
 
 def test_time_bars(ticks_sample):
-    time_bars = bars.aggregate_time_bars(ticks, '15min')
+    time_bars = bars.aggregate_time_bars(ticks_sample, '15min')
     assert list(time_bars.columns.values) == [
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
     ]
@@ -30,7 +41,7 @@ def test_time_bars(ticks_sample):
 
 
 def test_tick_bars(ticks_sample):
-    tick_bars = bars.aggregate_tick_bars(ticks, 1000)
+    tick_bars = bars.aggregate_tick_bars(ticks_sample, 1000)
     assert list(tick_bars.columns.values) == [
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
     ]
@@ -39,7 +50,7 @@ def test_tick_bars(ticks_sample):
 
 def test_volume_bars(ticks_sample):
     volume_freq = 5*10**6
-    volume_bars = bars.aggregate_volume_bars(ticks, volume_freq)
+    volume_bars = bars.aggregate_volume_bars(ticks_sample, volume_freq)
     assert list(volume_bars.columns.values) == [
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
     ]
@@ -49,7 +60,7 @@ def test_volume_bars(ticks_sample):
 
 def test_dollar_bars(ticks_sample):
     dollars_freq = 90*10**9
-    dollars_bars = bars.aggregate_dollar_bars(ticks, dollars_freq)
+    dollars_bars = bars.aggregate_dollar_bars(ticks_sample, dollars_freq)
     assert list(dollars_bars.columns.values) == [
         BarCol.OPEN, BarCol.HIGH, BarCol.LOW, BarCol.CLOSE, BarCol.VOLUME, BarCol.VWAP
     ]
@@ -62,7 +73,7 @@ def test_tick_imbalance_bars(ticks_sample):
     min_bar_size = 500
     max_bar_size = 5000
     tick_imbalance_bars, ticks_ext = bars.aggregate_imblance_bars(
-        ticks,
+        ticks_sample,
         bar_unit=BarUnit.TICK,
         min_bar_size=min_bar_size,
         max_bar_size=max_bar_size,
@@ -86,7 +97,7 @@ def test_volume_imbalance_bars(ticks_sample):
     min_bar_size = 1*10**6
     max_bar_size = 5*10**6
     volume_imbalance_bars = bars.aggregate_imblance_bars(
-        ticks,
+        ticks_sample,
         bar_unit=BarUnit.VOLUME,
         min_bar_size=min_bar_size,
         max_bar_size=max_bar_size,
@@ -109,7 +120,7 @@ def test_dollars_imbalance_bars(ticks_sample):
     min_bar_size = 1*10**6*20000
     max_bar_size = 5*10**6*20000
     dollars_imbalance_bars = bars.aggregate_imblance_bars(
-        ticks,
+        ticks_sample,
         bar_unit=BarUnit.DOLLARS,
         min_bar_size=min_bar_size,
         max_bar_size=max_bar_size,
@@ -132,7 +143,7 @@ def test_tick_runs_bars(ticks_sample):
     min_bar_size = 500
     max_bar_size = 5000
     tick_runs_bars, ticks_ext = bars.aggregate_runs_bars(
-        ticks,
+        ticks_sample,
         bar_unit=BarUnit.TICK,
         min_bar_size=min_bar_size,
         max_bar_size=max_bar_size,
@@ -158,7 +169,7 @@ def test_volume_runs_bars(ticks_sample):
     min_bar_size = 1*10**6
     max_bar_size = 5*10**6
     volume_runs_bars = bars.aggregate_runs_bars(
-        ticks,
+        ticks_sample,
         bar_unit=BarUnit.VOLUME,
         min_bar_size=1*10**6,
         max_bar_size=5*10**6,
@@ -183,7 +194,7 @@ def test_dollars_runs_bars(ticks_sample):
     min_bar_size = 1*10**6*20000
     max_bar_size = 5*10**6*20000
     dollar_runs_bars = bars.aggregate_runs_bars(
-        ticks,
+        ticks_sample,
         bar_unit=BarUnit.DOLLARS,
         min_bar_size=1*10**6*20000,
         max_bar_size=5*10**6*20000,
@@ -202,3 +213,18 @@ def test_dollars_runs_bars(ticks_sample):
     bar_sizes = dollar_runs_bars[BarCol.VOLUME]*dollar_runs_bars[BarCol.VWAP].values
     assert max(bar_sizes) <= max_bar_size
     assert min(bar_sizes[:-1]) >= min_bar_size
+
+
+def test_time_to_volume_bars_resample(bars_sample):
+    resampled = bars.resample_time_to_volume_bars(bars_sample, freq=10)
+    np.testing.assert_array_almost_equal(resampled[BarCol.VOLUME], [6, 9, 13])
+    pd.testing.assert_index_equal(bars_sample.index[[0, 3, 5]], resampled.index)
+    pd.testing.assert_series_equal(
+        resampled[BarCol.OPEN], bars_sample[BarCol.OPEN].iloc[[0, 3, 5]], check_index=False, check_less_precise=2
+    )
+    pd.testing.assert_series_equal(
+        resampled[BarCol.CLOSE], bars_sample[BarCol.CLOSE].iloc[[2, 4, 6]], check_index=False, check_less_precise=2
+    )
+    np.testing.assert_array_almost_equal(resampled[BarCol.LOW], [382.69, 385.63, 385.24], decimal=2)
+    np.testing.assert_array_almost_equal(resampled[BarCol.HIGH], [387.3, 387.41, 386.86], decimal=2)
+    np.testing.assert_array_almost_equal(resampled[BarCol.VWAP], [385.834, 386.137, 385.921], decimal=2)
