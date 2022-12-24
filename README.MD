@@ -18,31 +18,31 @@ expensive commercial systems and software.
 The derivatives and portfolio management tools maybe split into separate projects
 
 ### Financial ML & Statistical Methods
-- Standard & information driven bars sampling
-- Securities basket ETF trick and roll over adjustment
-- Triple barrier labeling
-- Label weighting by uniqueness, returns attribution and time decay
-- Fractionally differentiated time series
-- Cross validation
-  - Purged K-Fold
-  - Embargo
-- Features importance
-  - Mean decrease impurity
-  - Mean decrease accuracy
+- [x] Standard & information driven bars sampling
+- [x] Securities basket ETF trick and roll over adjustment
+- [x] Triple barrier labeling
+- [x] Label weighting by uniqueness, returns attribution and time decay
+- [x] Fractionally differentiated time series
+- [x] Cross validation
+  - [x] Purged K-Fold
+  - [x] Embargo
+- [x] Features importance
+  - [x] Mean decrease impurity
+  - [x] Mean decrease accuracy
 - Backtesting
-  - Strategy-independent position sizing
-  - Walk-forward
-  - Combinatorial purged CV
+  - [x] Strategy-independent position sizing
+  - [x] Walk-forward
+  - [x] Combinatorial purged CV
   - Synthetic data backtest
-- Evaluation methods & metrics
-  - Backtest metrics
-  - Attribution
-- Strategy risks
-- Assets allocation
-  - Hierarchical Risk Parity
+- [x] Evaluation methods & metrics
+  - [x] Backtest metrics
+  - [x] Attribution
+- [x] Strategy risks
+- [x] Assets allocation
+  - [x] Hierarchical Risk Parity
 - Features
-  - Structural breaks
-  - Entropy-based
+  - [x] Structural breaks
+  - [x] Entropy-based
   - Market microstructure features
   - 
 ... [TBD]
@@ -56,8 +56,8 @@ The derivatives and portfolio management tools maybe split into separate project
 - OIS discounting calculator
 - Valuation with credit risk factors: CVA, DVA
 - Options hedging & speculation strategies: principal protected notes, spreads, option baskets
-- Binomial trees valuation methods
-- Black-Scholes-Merton model
+- [x] Binomial trees valuation methods
+- [x] Black-Scholes-Merton model
 - Employee stock option valuation
 - Equity indices and currencies options valuation
 - Futures option valuation
@@ -85,7 +85,7 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 ... [TBD]
 
 ### Portfolio Management Toolbox
-- Portfolio optimization using Markowitz's mean-variance models
+- [x] Portfolio optimization using Markowitz's mean-variance models
 - Bonds portfolio management and hedging tools
 - Market equilibrium models: capital asset pricing model, arbitrage pricing model
 - Portfolio evaluation tools

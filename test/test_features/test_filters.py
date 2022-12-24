@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 
-from financial_ml.events.filters import filter_symmetric_cusum
+from financial_ml.features.filters import filter_symmetric_cusum, get_mmi
+from financial_ml.utils.simulation import gen_geometric_brownian
 
 
 def test_symmetric_cumsum_filter():
@@ -12,3 +13,10 @@ def test_symmetric_cumsum_filter():
     )
     events = filter_symmetric_cusum(series, 3)
     np.testing.assert_array_equal(events.values, time_index[[4, 10]].values)
+
+
+def test_mmi():
+    series = pd.Series(gen_geometric_brownian(100, 0.0, 0.15, 1000, random_state=42))
+    series = np.log(series).diff().dropna()
+    mmi = get_mmi(series)
+    assert 0.73 < mmi < 0.77

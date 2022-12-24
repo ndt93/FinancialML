@@ -2,6 +2,7 @@
 This module implements several filtering methods to obtain a subset of bars
 at which there is a higher likelihood of an actionable event
 """
+import numpy as np
 import pandas as pd
 
 
@@ -26,3 +27,14 @@ def filter_symmetric_cusum(series, threshold):
             pos_cumsum = 0
             t_events.append(t)
     return pd.DatetimeIndex(t_events)
+
+
+def get_mmi(series: pd.Series) -> float:
+    """
+    Calculate the market meanness index
+    """
+    median = series.median()
+    diff = series.diff()
+    n_hi = ((series > median) & (diff > 0)).sum()
+    n_lo = ((series < median) & (diff < 0)).sum()
+    return (n_hi + n_lo)/(series.shape[0] - 1)
