@@ -16,7 +16,7 @@ def test_symmetric_cumsum_filter():
 
 
 def test_mmi():
-    series = pd.Series(gen_geometric_brownian(100, 0.0, 0.15, 1000, random_state=42))
-    series = np.log(series).diff().dropna()
+    series = np.array(list(gen_geometric_brownian(100, 0.0, 0.15, 1000, random_state=42)))
+    series = np.diff(np.log(series))
     mmi = get_mmi(series)
     assert 0.73 < mmi < 0.77

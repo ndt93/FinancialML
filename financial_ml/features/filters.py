@@ -1,9 +1,6 @@
-"""
-This module implements several filtering methods to obtain a subset of bars
-at which there is a higher likelihood of an actionable event
-"""
 import numpy as np
 import pandas as pd
+from numba import jit
 
 
 def filter_symmetric_cusum(series, threshold):
@@ -29,12 +26,13 @@ def filter_symmetric_cusum(series, threshold):
     return pd.DatetimeIndex(t_events)
 
 
-def get_mmi(series: pd.Series) -> float:
+@jit(nopython=True, nogil=True)
+def get_mmi(series):
     """
     Calculate the market meanness index
     """
-    median = series.median()
-    diff = series.diff()
-    n_hi = ((series > median) & (diff > 0)).sum()
-    n_lo = ((series < median) & (diff < 0)).sum()
+    median = np.median(series)
+    diff = np.diff(series)
+    n_hi = ((series[1:] > median) & (diff > 0)).sum()
+    n_lo = ((series[1:] < median) & (diff < 0)).sum()
     return (n_hi + n_lo)/(series.shape[0] - 1)
