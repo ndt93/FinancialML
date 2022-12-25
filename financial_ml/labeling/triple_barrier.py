@@ -126,6 +126,6 @@ def get_event_labels(event_returns: pd.DataFrame, cancel_expired_event=False):
     if EventCol.SIDE in event_returns.columns:
         out.loc[out[EventCol.RETURN] <= 0, EventCol.LABEL] = 0
     if cancel_expired_event:
-        out[EventCol.LABEL][event_returns[EventCol.END_TIME] >= event_returns[EventCol.EXPIRY]] = 0.
+        out.loc[event_returns[EventCol.END_TIME] >= event_returns[EventCol.EXPIRY], EventCol.LABEL] = 0.
 
     return out
