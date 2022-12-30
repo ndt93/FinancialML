@@ -32,7 +32,7 @@ def _get_triple_barrier_returns(prices: pd.DataFrame, events: pd.DataFrame, mult
     highs = prices[BarCol.HIGH]
 
     out = events.copy()
-    for event_start, event_expiry in events[EventCol.EXPIRY].fillna(prices.index[-1]).iteritems():
+    for event_start, event_expiry in events[EventCol.EXPIRY].fillna(prices.index[-1]).items():
         start_price = opens.loc[event_start]
         path_lo_prices = lows[event_start:event_expiry]
         path_hi_prices = highs[event_start:event_expiry]
@@ -126,6 +126,6 @@ def get_event_labels(event_returns: pd.DataFrame, cancel_expired_event=False):
     if EventCol.SIDE in event_returns.columns:
         out.loc[out[EventCol.RETURN] <= 0, EventCol.LABEL] = 0
     if cancel_expired_event:
-        out[EventCol.LABEL][event_returns[EventCol.END_TIME] >= event_returns[EventCol.EXPIRY]] = 0.
+        out.loc[event_returns[EventCol.END_TIME] >= event_returns[EventCol.EXPIRY], EventCol.LABEL] = 0.
 
     return out

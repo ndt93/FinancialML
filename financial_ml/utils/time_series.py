@@ -57,3 +57,4 @@ def get_vertical_barriers(series: pd.Series, events: pd.Series, holding_period: 
     barrier_indices = series.index.searchsorted(events + pd.Timedelta(days=holding_period))
     barrier_indices = barrier_indices[barrier_indices < series.shape[0]]
     barriers = pd.Series(series.index[barrier_indices], index=events[:barrier_indices.shape[0]])
+    return barriers
