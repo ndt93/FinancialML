@@ -36,3 +36,18 @@ def get_mmi(series):
     n_hi = ((series[1:] > median) & (diff > 0)).sum()
     n_lo = ((series[1:] < median) & (diff < 0)).sum()
     return (n_hi + n_lo)/(series.shape[0] - 1)
+
+
+def hull_ma(series: pd.DataFrame | pd.Series, n: int, agg_fn='mean', win_type=None):
+    """
+    Hull moving average
+    :param series:
+    :param n: period of the long moving average
+    :param agg_fn: aggregate function
+    :param win_type: a scipy.signal window function
+    :return:
+    """
+    short = series.rolling(n//2, win_type=win_type).agg(agg_fn)
+    long = series.rolling(n, win_type=win_type).agg(agg_fn)
+    hull = (2*short - long).rolling(int(np.sqrt(n)), win_type=win_type).agg(agg_fn)
+    return hull
