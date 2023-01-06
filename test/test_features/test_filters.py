@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from financial_ml.features.filters import filter_symmetric_cusum, get_mmi
+from financial_ml.features.filters import filter_symmetric_cusum, get_mmi, hull_ma
 from financial_ml.utils.simulation import gen_geometric_brownian
 
 
@@ -20,3 +20,9 @@ def test_mmi():
     series = np.diff(np.log(series))
     mmi = get_mmi(series)
     assert 0.73 < mmi < 0.77
+
+
+def test_hull_ma():
+    series = pd.Series(range(10)).dropna()
+    hull_series = hull_ma(series, 2, agg_fn='mean').dropna().values
+    np.testing.assert_array_almost_equal(hull_series, np.arange(1.5, 10., 1.))
