@@ -129,3 +129,57 @@ def get_event_labels(event_returns: pd.DataFrame, cancel_expired_event=False):
         out.loc[event_returns[EventCol.END_TIME] >= event_returns[EventCol.EXPIRY], EventCol.LABEL] = 0.
 
     return out
+
+
+def get_fixed_window_events(bars: pd.DataFrame, window: pd.Timedelta, feature_event_gap: pd.Timedelta,
+                            drop_partial_events=True, align_with_bars=True, with_return=True):
+    """
+    Get windows of events with fixed duration
+
+    :param bars: DataFrame with DateTimeIndex
+    :param window: event's duration including the gap between the feature's bar and event's start bar
+    :param feature_event_gap: interval between the feature's bar and event's start bar
+    :param drop_partial_events: drop events that ends after the last bar
+    :param align_with_bars: match event's times with the closest bars on or after them. Assume bars' index is sorted.
+        Events that start after the last bar are removed. Events that end after the last bar are clipped.
+    :param with_return: calculate log-return for each event
+    :return: DataFrame of event start times, end times and optional returns
+    """
+
+    def _ret_in_period(rets, start, end):
+        period_rets = rets.loc[start:end]
+        return period_rets['c'].sum() + period_rets['oc'].iloc[0]
+
+    event_starts = bars.index + feature_event_gap
+    event_ends = bars.index + window
+    events = pd.DataFrame({
+        EventCol.START_TIME: event_starts,
+        EventCol.END_TIME: event_ends
+    }, index=bars.index)
+
+    if drop_partial_events:
+        is_completed = events[EventCol.END_TIME] <= bars.index[-1]
+        events = events[is_completed]
+
+    if align_with_bars:
+        start_indices = bars.index.searchsorted(events[EventCol.START_TIME])
+        is_started = start_indices < len(bars)
+        start_indices = start_indices[is_started]
+        events = events[is_started]
+        events[EventCol.START_TIME] = bars.index[start_indices]
+
+        end_indices = bars.index.searchsorted(events[EventCol.END_TIME])
+        end_indices = np.minimum(end_indices, len(bars) - 1)
+        events[EventCol.END_TIME] = bars.index[end_indices]
+
+    if with_return:
+        rets = pd.DataFrame({
+            'c': np.log(bars[BarCol.CLOSE]).diff(),
+            'oc': np.log(bars[BarCol.CLOSE]/bars[BarCol.OPEN])
+        })
+        event_rets = events.apply(
+            lambda e: _ret_in_period(rets, e[EventCol.START_TIME], e[EventCol.END_TIME]), axis=1
+        )
+        events[EventCol.RETURN] = event_rets
+
+    return events
