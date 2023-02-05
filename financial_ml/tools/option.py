@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 from scipy.ndimage import gaussian_filter1d
@@ -63,15 +65,15 @@ def implied_underlying_discrete_pdf(
 
 
 def implied_underlying_distribution(
-        calls: pd.DataFrame, puts: pd.DataFrame, t: float, r: float = None,
+        calls: Optional[pd.DataFrame], puts: Optional[pd.DataFrame], t: float, r: float = None,
         s0: float = None, d: float = 0., n_interpolate: int = None, smooth_width: float = None,
         kde_samples=10000, random_state=None
 ):
     """
     Get the implied distribution of the underlying asset price from its option prices
 
-    :param calls: DataFrame of call option Strike and Price
-    :param puts: DataFrame of call option Strike and Price
+    :param calls: DataFrame of call option Strike and Price. 1 of calls or puts must be provided
+    :param puts: DataFrame of call option Strike and Price. 1 of calls or puts must be provided
     :param t: time to expiry in years
     :param r: continuously-compounded risk-free interest rate. If None, estimate from call-put parity
     :param s0: current underlying asset price.
@@ -80,7 +82,7 @@ def implied_underlying_distribution(
         If None, default to 3*number_of_strikes
     :param smooth_width: Gaussian filter width for smoothing the estimated pdf
     :param kde_samples: number of generated samples to KDE estimation of the discrete pdf
-    :param random_state: numpy's random seed for generatin the KDE samples
+    :param random_state: numpy's random seed for generating the KDE samples
     :return: scipy's rv_continuous instance, pdf function
     """
     if r is None:
@@ -90,12 +92,22 @@ def implied_underlying_distribution(
             raise ValueError('Both calls and puts must be provided to estimate r')
         r, _ = implied_risk_free_rate(calls, puts, s0, t, d=d)
 
-    pdf_calls = implied_underlying_discrete_pdf(calls, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
+    pdf_calls = pdf_puts = None
+    if calls is not None:
+        pdf_calls = implied_underlying_discrete_pdf(
+            calls, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
     if puts is not None:
-        pdf_puts = implied_underlying_discrete_pdf(puts, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
+        pdf_puts = implied_underlying_discrete_pdf(
+            puts, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
+
+    if pdf_calls is not None and pdf_puts is not None:
         pdf = pd.concat([pdf_calls, pdf_puts], axis=0)
-    else:
+    elif pdf_calls is not None:
         pdf = pdf_calls
+    elif pdf_puts is not None:
+        pdf = pdf_puts
+    else:
+        raise Exception('At least calls or puts must not be None')
 
     if random_state is not None:
         np.random.seed(random_state)
