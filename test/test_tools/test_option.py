@@ -8,7 +8,8 @@ from financial_ml.tools.option import (
     implied_underlying_distribution,
     bsm_option_price,
     implied_volatility,
-    binom_am_option_price
+    binom_am_option_price,
+    bsm_return_distribution
 )
 
 
@@ -108,3 +109,17 @@ def test_implied_volatility():
         observed_price=4.278, pricing_fn=binom_am_option_price, option_type=OptionType.PUT, s0=50, k=50, r=0.1, T=5/12
     )
     assert iv == pytest.approx(0.4, abs=1e-2)
+
+
+def test_bsm_return_distribution():
+    dist = bsm_return_distribution(0.16, 0.2, 0.5)
+    logret_dist = dist['log_ret']
+    logprice_mean = np.log(40) + logret_dist.mean()
+    logprice_var = logret_dist.var()
+    assert logprice_mean == pytest.approx(3.759, abs=1e-3)
+    assert logprice_var == pytest.approx(0.02, abs=1e-3)
+
+    dist = bsm_return_distribution(0.17, 0.2, 3)
+    ret_dist = dist['annual_ret']
+    assert ret_dist.mean() == pytest.approx(0.15, abs=1e-3)
+    assert ret_dist.std() == pytest.approx(0.1155, abs=1e-3)

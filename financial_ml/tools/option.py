@@ -269,3 +269,17 @@ def implied_volatility(
     f = lambda sigma: pricing_fn(sigma=sigma, **kwargs) - observed_price
     x0 = brentq(f, a=lower_bound, b=upper_bound, maxiter=maxiter)
     return x0
+
+
+def bsm_return_distribution(mu, sigma, t):
+    """
+    :param mu: expected return per year
+    :param sigma: volatility per year
+    :param t: time period of return
+    :return: distributions of log-return and annual continuously compounded return
+    """
+    mean_ret = (mu - sigma**2/2)
+    return {
+        'log_ret': norm(loc=mean_ret*t, scale=sigma*np.sqrt(t)),
+        'annual_ret': norm(loc=mean_ret, scale=sigma/np.sqrt(t))
+    }
