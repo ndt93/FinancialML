@@ -271,15 +271,17 @@ def implied_volatility(
     return x0
 
 
-def bsm_return_distribution(mu, sigma, t):
+def bsm_return_distribution(mu, sigma, t, dist=norm, **shapes):
     """
     :param mu: expected return per year
     :param sigma: volatility per year
     :param t: time period of return
+    :param dist: the generating distribution
+    :param shapes: shape parameters for the generating distribution
     :return: distributions of log-return and annual continuously compounded return
     """
     mean_ret = (mu - sigma**2/2)
     return {
-        'log_ret': norm(loc=mean_ret*t, scale=sigma*np.sqrt(t)),
-        'annual_ret': norm(loc=mean_ret, scale=sigma/np.sqrt(t))
+        'log_ret': dist(loc=mean_ret*t, scale=sigma*np.sqrt(t), **shapes),
+        'annual_ret': dist(loc=mean_ret, scale=sigma/np.sqrt(t), **shapes)
     }
