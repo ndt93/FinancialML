@@ -34,29 +34,45 @@ def implied_risk_free_rate(calls: pd.DataFrame, puts: pd.DataFrame, s0: float, t
 
 
 def implied_underlying_discrete_pdf(
-        options: pd.DataFrame, t: float, r: float, n_interpolate: int = None, smooth_width: float = None
+        options: pd.DataFrame, t: float, r: float, n_interpolate: int = None, smooth_width: float = None,
+        volatility_space=False, s0: float = None, option_type: OptionType = None
 ):
     """
     Get the implied discrete pdf of the underlying asset price from its option prices
 
-    :param options: DataFrame of Strike and Price
-    :param t: time to expiry in years
-    :param r: continuously-compounded risk-free interest rate
-    :param n_interpolate: number of strikes to be interpolated in the pdf
+    :param options: DataFrame of Strike and Price.
+    :param t: Time to expiry in years
+    :param r: Continuously-compounded risk-free interest rate
+    :param n_interpolate: Number of strikes to be interpolated in the pdf
     :param smooth_width: Gaussian filter width for smoothing
+    :param volatility_space: Find price curve by interpolating in implied volatility space and inversing it
+    :param s0: Current spot price. Required if use_volatility_space is True
+    :param option_type: Put/Call. Required if use_volatility_space is True
     :return: DataFrame estimated PDF for each interpolated strike price
     """
     if options.shape[0] == 0:
         return pd.DataFrame(columns=[OptionCol.STRIKE, StatsCol.PDF], dtype=float)
-    price_curve = CubicSpline(x=options[OptionCol.STRIKE], y=options[OptionCol.PRICE])
-    deriv2 = price_curve.derivative(2)
-
     if n_interpolate is None:
         n_interpolate = options.shape[0]*3
     k = np.linspace(options[OptionCol.STRIKE].min(), options[OptionCol.STRIKE].max(), num=n_interpolate)
+
+    if volatility_space:
+        iv = [
+            implied_volatility(observed_price=v, option_type=option_type, s0=s0, k=k, r=r, T=t)
+            for k, v in options[[OptionCol.STRIKE, OptionCol.PRICE]].itertuples(index=False)
+        ]
+        iv_curve = CubicSpline(x=options[OptionCol.STRIKE], y=iv)
+        interpolated_prices = [
+            bsm_option_price(option_type=option_type, s0=s0, k=k, r=r, sigma=vol, T=t)
+            for k, vol in zip(k, iv_curve(k))
+        ]
+        price_curve = CubicSpline(x=k, y=interpolated_prices)
+    else:
+        price_curve = CubicSpline(x=options[OptionCol.STRIKE], y=options[OptionCol.PRICE])
+
+    deriv2 = price_curve.derivative(2)
     pdf = pd.DataFrame({OptionCol.STRIKE: k, StatsCol.PDF: np.exp(r*t)*deriv2(k)})
     pdf = pdf[pdf[StatsCol.PDF] >= 0]
-
     if smooth_width is not None:
         smooth_width = smooth_width
         pdf[StatsCol.PDF] = gaussian_filter1d(pdf[StatsCol.PDF], smooth_width)
@@ -67,7 +83,7 @@ def implied_underlying_discrete_pdf(
 def implied_underlying_distribution(
         calls: Optional[pd.DataFrame], puts: Optional[pd.DataFrame], t: float, r: float = None,
         s0: float = None, d: float = 0., n_interpolate: int = None, smooth_width: float = None,
-        kde_samples=10000, random_state=None
+        volatility_space=False, kde_samples=10000, random_state=None
 ):
     """
     Get the implied distribution of the underlying asset price from its option prices
@@ -81,6 +97,7 @@ def implied_underlying_distribution(
     :param n_interpolate: number of interpolated strike prices for estimating discrete pdf.
         If None, default to 3*number_of_strikes
     :param smooth_width: Gaussian filter width for smoothing the estimated pdf
+    :param volatility_space: interpolate option prices using implied volatility space
     :param kde_samples: number of generated samples to KDE estimation of the discrete pdf
     :param random_state: numpy's random seed for generating the KDE samples
     :return: scipy's rv_continuous instance, pdf function
@@ -95,10 +112,14 @@ def implied_underlying_distribution(
     pdf_calls = pdf_puts = None
     if calls is not None:
         pdf_calls = implied_underlying_discrete_pdf(
-            calls, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
+            calls, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width,
+            volatility_space=volatility_space, s0=s0, option_type=OptionType.CALL
+        )
     if puts is not None:
         pdf_puts = implied_underlying_discrete_pdf(
-            puts, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width)
+            puts, t, r, n_interpolate=n_interpolate, smooth_width=smooth_width,
+            volatility_space=volatility_space, s0=s0, option_type=OptionType.PUT
+        )
 
     if pdf_calls is not None and pdf_puts is not None:
         pdf = pd.concat([pdf_calls, pdf_puts], axis=0)
@@ -254,7 +275,7 @@ def binom_am_option_price(
 
 def implied_volatility(
         observed_price, pricing_fn=bsm_option_price,
-        lower_bound=0.01, upper_bound=1.0, maxiter=100,
+        lower_bound=1e-4, upper_bound=1.0, maxiter=100,
         **kwargs
 ):
     """

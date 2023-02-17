@@ -40,10 +40,11 @@ def test_implied_risk_free_rate(data):
     assert r == pytest.approx(0.037444, abs=1e-3)
 
 
-def test_implied_underlying_distribution(data):
+def test_implied_distribution_price_space(data):
     calls, puts, s0, t, d = data
     out = implied_underlying_distribution(
-        calls, puts, t, r=None, s0=s0, d=d, n_interpolate=None, smooth_width=1e-3, random_state=42
+        calls, puts, t, r=None, s0=s0, d=d, n_interpolate=None,
+        smooth_width=1e-3, volatility_space=False, random_state=42
     )
     print(out)
     rv, pdf = out['rv'], out['pdf']
@@ -54,6 +55,22 @@ def test_implied_underlying_distribution(data):
     np.testing.assert_array_almost_equal(pdf_samples, [0.05012719, 0.02175576, 0.02381988, 0.05210559,
                                                        0.07070455, 0.08096232, 0.12420206, 0.12058565,
                                                        0.05888099, 0.01748028])
+
+
+def test_implied_distribution_volatility_space(data):
+    calls, puts, s0, t, d = data
+    out = implied_underlying_distribution(
+        calls, puts, t, r=None, s0=s0, d=d, n_interpolate=None,
+        smooth_width=1e-3, volatility_space=True, random_state=42
+    )
+    rv, pdf = out['rv'], out['pdf']
+    cdf_samples = rv.cdf([386, 392, 405, 406])
+    pdf_samples = pdf(range(400, 410))
+    assert out['r'] == pytest.approx(0.03744, abs=1e-3)
+    np.testing.assert_array_almost_equal(cdf_samples, [0.010667, 0.037268, 0.635841, 0.737097])
+    np.testing.assert_array_almost_equal(pdf_samples, [0.051657, 0.023868, 0.026152, 0.055514,
+                                                       0.079277, 0.087429, 0.115507, 0.103345,
+                                                       0.050047, 0.015746])
 
 
 def test_bsm_option_pricing():
