@@ -1,8 +1,9 @@
 import pandas as pd
 import pytest
+import numpy as np
 
 from financial_ml.data_structures.constants import BarCol, EventCol
-from financial_ml.labeling.triple_barrier import get_event_returns, get_event_labels
+from financial_ml.labeling.triple_barrier import get_event_returns, get_event_labels, get_fixed_window_events
 
 event_start_times = pd.to_datetime(['2022-01-05', '2022-01-09', '2022-01-15'])
 events = pd.DataFrame({
@@ -171,3 +172,21 @@ def test_labeling_with_hi_lo_prices_and_sides(prices_with_hi_lo):
     labels = get_event_labels(event_returns)
     expected_labels = pd.Series([1., 0., 1.], index=event_start_times)
     pd.testing.assert_series_equal(labels[EventCol.LABEL], expected_labels, check_names=False)
+
+
+def test_get_fixed_window_events():
+    closes = np.array([np.exp(i*0.01) for i in range(30)])
+    opens = closes*np.exp(-0.01)
+    bars = pd.DataFrame({BarCol.CLOSE: closes, BarCol.OPEN: opens},
+                        index=pd.date_range('2023-01-01', '2023-01-30'))
+    fixed_events = get_fixed_window_events(bars, pd.Timedelta(days=3), pd.Timedelta(days=1))
+    pd.testing.assert_index_equal(fixed_events.index, pd.date_range('2023-01-01', '2023-01-27'))
+    pd.testing.assert_series_equal(fixed_events[EventCol.START_TIME],
+                                   pd.Series(pd.date_range('2023-01-02', '2023-01-28'), index=fixed_events.index),
+                                   check_index=False, check_names=False)
+    pd.testing.assert_series_equal(fixed_events[EventCol.END_TIME],
+                                   pd.Series(pd.date_range('2023-01-04', '2023-01-30'), index=fixed_events.index),
+                                   check_index=False, check_names=False)
+    pd.testing.assert_series_equal(fixed_events[EventCol.RETURN],
+                                   pd.Series([0.04]*27, index=fixed_events.index),
+                                   check_index=False, check_names=False)
