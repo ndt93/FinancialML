@@ -275,7 +275,7 @@ def binom_am_option_price(
 
 def implied_volatility(
         observed_price, pricing_fn=bsm_option_price,
-        lower_bound=1e-4, upper_bound=1.0, maxiter=100,
+        lower_bound=0.01, upper_bound=1.0, maxiter=100,
         **kwargs
 ):
     """
@@ -288,6 +288,25 @@ def implied_volatility(
     :param kwargs: arguments to the option pricing function
     """
     f = lambda sigma: pricing_fn(sigma=sigma, **kwargs) - observed_price
+    x0 = brentq(f, a=lower_bound, b=upper_bound, maxiter=maxiter)
+    return x0
+
+
+def implied_asset_price(
+        option_price, pricing_fn=bsm_option_price,
+        lower_bound=0.01, upper_bound=1.0, maxiter=100,
+        **kwargs
+):
+    """
+    Get implied volatility for an observed option price
+    :param option_price:
+    :param pricing_fn: the option pricing function
+    :param lower_bound: low bracket of interval for root finding
+    :param upper_bound: high bracket of interval for root finding
+    :param maxiter: number of iterations for root finding
+    :param kwargs: arguments to the option pricing function
+    """
+    f = lambda s0: pricing_fn(s0=s0, **kwargs) - option_price
     x0 = brentq(f, a=lower_bound, b=upper_bound, maxiter=maxiter)
     return x0
 

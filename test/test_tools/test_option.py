@@ -119,11 +119,11 @@ def test_binom_option_pricing():
 
 
 def test_implied_volatility():
-    iv = implied_volatility(observed_price=2.5, option_type=OptionType.CALL, s0=15, k=13, r=0.05, T=3/12)
+    iv = implied_volatility(observed_price=2.5, option_type=OptionType.CALL, s0=15, k=13, r=0.05, T=3 / 12)
     assert iv == pytest.approx(0.3964355, abs=1e-4)
 
     iv = implied_volatility(
-        observed_price=4.278, pricing_fn=binom_am_option_price, option_type=OptionType.PUT, s0=50, k=50, r=0.1, T=5/12
+        observed_price=4.278, pricing_fn=binom_am_option_price, option_type=OptionType.PUT, s0=50, k=50, r=0.1, T=5 / 12
     )
     assert iv == pytest.approx(0.4, abs=1e-2)
 
