@@ -56,7 +56,7 @@ def _regress_firm_params(
     return FirmParams(alpha=alpha, beta=beta, sigma=sigma)
 
 
-class FirmStructuralModel:
+class FirmStructuralCreditRisk:
 
     def __init__(self):
         self.firm_params = None
@@ -148,3 +148,29 @@ class FirmStructuralModel:
             tol=tol,
             maxiter=maxiter - 1
         )
+
+    def predict_default(self, equity_value, debt_value, debt_maturity, risk_free_rate, market_ret):
+        debt_value = max(1, debt_value)
+        mkt_ex_ret = market_ret - risk_free_rate*debt_maturity
+        asset_value = implied_asset_price(
+            option_price=equity_value,
+            x0=(equity_value + debt_value),
+            pricing_fn=_cond_equity_value,
+            k=debt_value,
+            r=risk_free_rate,
+            sigma=self.firm_params.sigma,
+            T=debt_maturity,
+            alpha=self.firm_params.alpha,
+            beta=self.firm_params.beta,
+            mkt_ex_ret=mkt_ex_ret
+        )
+        return 1 - norm.cdf(_d2(
+            s0=asset_value,
+            k=debt_value,
+            r=risk_free_rate,
+            sigma=self.firm_params.sigma,
+            t=debt_maturity,
+            alpha=self.firm_params.alpha,
+            beta=self.firm_params.beta,
+            mkt_ex_ret=mkt_ex_ret
+        ))

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from financial_ml.features.systematic_default import FirmStructuralModel
+from financial_ml.features.systematic_default import FirmStructuralCreditRisk
 
 
 def test_model_fit():
@@ -16,7 +16,7 @@ def test_model_fit():
     debt_values = (dataset_monthly['shortTermDebt'] + dataset_monthly['longTermDebt'] / 2).values
     risk_free_rates = dataset_monthly['treasury_yield'].iloc[:-1].values
 
-    model = FirmStructuralModel()
+    model = FirmStructuralCreditRisk()
     res = model.fit(
         market_rets=market_rets,
         equity_values=dataset_monthly['marketCap'].values,
