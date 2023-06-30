@@ -8,7 +8,7 @@ from financial_ml.tools.option import implied_asset_price
 
 
 def _d1(s0, k, r, sigma, t, alpha, beta, mkt_ex_ret):
-    return (np.log(s0 / k) + (r + alpha + sigma ** 2 / 2) * t + beta * mkt_ex_ret) / (sigma * np.sqrt(t))
+    return (np.log(s0/k) + (r + alpha + sigma**2/2)*t + beta*mkt_ex_ret) / (sigma*np.sqrt(t))
 
 
 def _d2(s0, k, r, sigma, t, alpha, beta, mkt_ex_ret):
@@ -61,7 +61,7 @@ class FirmStructuralModel:
     def __init__(self):
         self.firm_params = None
 
-    def get_asset_returns(
+    def fit(
             self,
             market_rets: np.array,
             equity_values: np.array,
@@ -90,12 +90,13 @@ class FirmStructuralModel:
             raise Exception('Unable to converge after maxiter')
 
         equity_rets = np.diff(np.log(equity_values))
+        mkt_ex_rets = market_rets - risk_free_rates * interval
 
         if self.firm_params is None:
             self.firm_params = _regress_firm_params(
                 asset_rets=equity_rets,
-                market_rets=market_rets[:len(equity_rets)],
-                risk_free_rates=risk_free_rates[:len(equity_rets)],
+                market_rets=market_rets,
+                risk_free_rates=risk_free_rates,
                 interval=interval
             )
 
@@ -110,33 +111,34 @@ class FirmStructuralModel:
                 T=T,
                 alpha=self.firm_params.alpha,
                 beta=self.firm_params.beta,
-                mkt_ex_ret=market_rets - risk_free_rates
+                mkt_ex_ret=mkt_ex_ret * T/interval
             )
-            for equity, debt, T, r in zip(equity_values, debt_values, debt_maturities, risk_free_rates)
+            for equity, debt, T, r, mkt_ex_ret in
+            zip(equity_values, debt_values, debt_maturities, risk_free_rates, mkt_ex_rets)
         ])
         deltas = norm.cdf(_d1(
             s0=asset_values,
-            k=equity_values,
+            k=np.maximum(1, debt_values[:-1]),
             r=risk_free_rates,
             sigma=self.firm_params.sigma,
-            t=debt_maturities,
+            t=debt_maturities[:-1],
             alpha=self.firm_params.alpha,
             beta=self.firm_params.beta,
-            mkt_ex_ret=(market_rets - risk_free_rates)
-        ))[:len(equity_rets)]
-        asset_rets = equity_rets / (deltas * asset_values[:len(equity_rets)]/equity_values[:len(equity_rets)])
+            mkt_ex_ret=mkt_ex_rets * debt_maturities[:-1]/interval
+        ))
+        asset_rets = equity_rets / (deltas * asset_values/equity_values[:-1])
         new_firm_params = _regress_firm_params(
             asset_rets=asset_rets,
-            market_rets=market_rets[:len(asset_rets)],
-            risk_free_rates=risk_free_rates[:len(asset_rets)],
+            market_rets=market_rets,
+            risk_free_rates=risk_free_rates,
             interval=interval
         )
         if self.firm_params.approx_equal(new_firm_params):
             self.firm_params = new_firm_params
-            return self.firm_params
+            return asset_rets, asset_values
 
         self.firm_params = new_firm_params
-        return self.get_asset_returns(
+        return self.fit(
             market_rets=market_rets,
             equity_values=equity_values,
             debt_values=debt_values,
