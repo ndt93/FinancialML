@@ -63,6 +63,7 @@ class FirmStructuralCreditRisk:
 
     def fit(
             self,
+            expected_market_ret: float,
             market_rets: np.array,
             equity_values: np.array,
             debt_values: np.array,
@@ -73,10 +74,11 @@ class FirmStructuralCreditRisk:
             maxiter=100
     ):
         """
-        Compute a series of a firm's asset values and returns using Merton's structural model
-        where the company's the equity value is treated as call option with the book value of debt
-        as the strike price and expires at the debt's maturity.
+        Estimate firm's parameters by estimating a series of a firm's asset values and returns
+        using Merton's structural model where the company's the equity value is treated as call option
+        with the book value of debt as the strike price and expires at the debt's maturity.
 
+        :param expected_market_ret:
         :param market_rets:
         :param equity_values:
         :param debt_values:
@@ -86,68 +88,60 @@ class FirmStructuralCreditRisk:
         :param tol:
         :param maxiter:
         """
-        if maxiter <= 0:
-            raise Exception('Unable to converge after maxiter')
-
         equity_rets = np.diff(np.log(equity_values))
-        mkt_ex_rets = market_rets - risk_free_rates * interval
-
-        if self.firm_params is None:
-            self.firm_params = _regress_firm_params(
-                asset_rets=equity_rets,
-                market_rets=market_rets,
-                risk_free_rates=risk_free_rates,
-                interval=interval
-            )
-
-        asset_values = np.array([
-            implied_asset_price(
-                option_price=equity,
-                x0=(equity + debt),
-                pricing_fn=_cond_equity_value,
-                k=max(1, debt),
-                r=r,
-                sigma=self.firm_params.sigma,
-                T=T,
-                alpha=self.firm_params.alpha,
-                beta=self.firm_params.beta,
-                mkt_ex_ret=mkt_ex_ret * T/interval
-            )
-            for equity, debt, T, r, mkt_ex_ret in
-            zip(equity_values, debt_values, debt_maturities, risk_free_rates, mkt_ex_rets)
-        ])
-        deltas = norm.cdf(_d1(
-            s0=asset_values,
-            k=np.maximum(1, debt_values[:-1]),
-            r=risk_free_rates,
-            sigma=self.firm_params.sigma,
-            t=debt_maturities[:-1],
-            alpha=self.firm_params.alpha,
-            beta=self.firm_params.beta,
-            mkt_ex_ret=mkt_ex_rets * debt_maturities[:-1]/interval
-        ))
-        asset_rets = equity_rets / (deltas * asset_values/equity_values[:-1])
-        new_firm_params = _regress_firm_params(
-            asset_rets=asset_rets,
+        exp_mkt_ex_rets = expected_market_ret - risk_free_rates * interval
+        self.firm_params = _regress_firm_params(
+            asset_rets=equity_rets,
             market_rets=market_rets,
             risk_free_rates=risk_free_rates,
             interval=interval
         )
-        if self.firm_params.approx_equal(new_firm_params):
-            self.firm_params = new_firm_params
-            return asset_rets, asset_values
 
-        self.firm_params = new_firm_params
-        return self.fit(
-            market_rets=market_rets,
-            equity_values=equity_values,
-            debt_values=debt_values,
-            debt_maturities=debt_maturities,
-            interval=interval,
-            risk_free_rates=risk_free_rates,
-            tol=tol,
-            maxiter=maxiter - 1
-        )
+        iteration = 0
+        while iteration < maxiter:
+            asset_values = np.array([
+                implied_asset_price(
+                    option_price=equity,
+                    x0=(equity + debt),
+                    pricing_fn=_cond_equity_value,
+                    k=max(1, debt),
+                    r=r,
+                    sigma=self.firm_params.sigma,
+                    T=T,
+                    alpha=self.firm_params.alpha,
+                    beta=self.firm_params.beta,
+                    mkt_ex_ret=mkt_ex_ret * T
+                )
+                for equity, debt, T, r, mkt_ex_ret in
+                zip(equity_values, debt_values, debt_maturities, risk_free_rates, exp_mkt_ex_rets)
+            ])
+
+            deltas = norm.cdf(_d1(
+                s0=asset_values,
+                k=np.maximum(1, debt_values[:-1]),
+                r=risk_free_rates,
+                sigma=self.firm_params.sigma,
+                t=debt_maturities[:-1],
+                alpha=self.firm_params.alpha,
+                beta=self.firm_params.beta,
+                mkt_ex_ret=exp_mkt_ex_rets * debt_maturities[:-1]
+            ))
+            asset_rets = equity_rets / (deltas * asset_values / equity_values[:-1])
+
+            new_firm_params = _regress_firm_params(
+                asset_rets=asset_rets,
+                market_rets=market_rets,
+                risk_free_rates=risk_free_rates,
+                interval=interval
+            )
+            if self.firm_params.approx_equal(new_firm_params, tol=tol):
+                self.firm_params = new_firm_params
+                return asset_rets, asset_values
+
+            self.firm_params = new_firm_params
+            iteration += 1
+
+        raise Exception(f'Failed to converge after {maxiter} iterations')
 
     def predict_default(self, equity_value, debt_value, debt_maturity, risk_free_rate, market_ret):
         debt_value = max(1, debt_value)

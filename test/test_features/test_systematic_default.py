@@ -18,6 +18,7 @@ def test_model_fit():
 
     model = FirmStructuralCreditRisk()
     res = model.fit(
+        expected_market_ret=0.12,
         market_rets=market_rets,
         equity_values=dataset_monthly['marketCap'].values,
         debt_values=debt_values,
