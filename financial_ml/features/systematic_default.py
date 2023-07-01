@@ -78,15 +78,17 @@ class FirmStructuralCreditRisk:
         using Merton's structural model where the company's the equity value is treated as call option
         with the book value of debt as the strike price and expires at the debt's maturity.
 
-        :param expected_market_ret:
-        :param market_rets:
-        :param equity_values:
-        :param debt_values:
-        :param debt_maturities:
-        :param interval:
-        :param risk_free_rates:
-        :param tol:
-        :param maxiter:
+        :param expected_market_ret: Annualized expected market log-return for equity valuation
+        :param market_rets: Realized market log-returns over each data interval.
+            Should include both broad equity and corporate bonds return.
+        :param equity_values: Firm's market equity value i.e. market cap at the start of each interval
+        :param debt_values: Firm's last known debt value at the start of each interval.
+            E.g. DLC + 1/2*DLTT from firm's balance sheet
+        :param debt_maturities: Maturity of firm's debts at start of each interval
+        :param interval: Time duration in years for the returns and values series
+        :param risk_free_rates: continuously compounded risk free interest rate e.g. 1Y Treasury yield
+        :param tol: error margin for convergence criteria
+        :param maxiter: max number of iterations for parameters estimation
         """
         equity_rets = np.diff(np.log(equity_values))
         exp_mkt_ex_rets = expected_market_ret - risk_free_rates * interval
