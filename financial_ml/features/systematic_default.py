@@ -74,7 +74,7 @@ class FirmStructuralCreditRisk:
             maxiter=100
     ):
         """
-        Estimate firm's parameters by estimating a series of a firm's asset values and returns
+        Compute firm's parameters by estimating a series of a firm's asset values and returns
         using Merton's structural model where the company's the equity value is treated as call option
         with the book value of debt as the strike price and expires at the debt's maturity.
 
@@ -86,7 +86,7 @@ class FirmStructuralCreditRisk:
             E.g. DLC + 1/2*DLTT from firm's balance sheet
         :param debt_maturities: Maturity of firm's debts at start of each interval
         :param interval: Time duration in years for the returns and values series
-        :param risk_free_rates: continuously compounded risk free interest rate e.g. 1Y Treasury yield
+        :param risk_free_rates: continuously compounded risk-free interest rate e.g. 1Y Treasury yield
         :param tol: error margin for convergence criteria
         :param maxiter: max number of iterations for parameters estimation
         """
@@ -146,6 +146,16 @@ class FirmStructuralCreditRisk:
         raise Exception(f'Failed to converge after {maxiter} iterations')
 
     def predict_default(self, equity_value, debt_value, debt_maturity, risk_free_rate, market_ret):
+        """
+        Predict firm's default probability at deb maturity conditioned on the realized market return
+
+        :param equity_value: firm's market equity value
+        :param debt_value: firm's debts value on balance sheet
+        :param debt_maturity: firm's debts maturity
+        :param risk_free_rate: risk-free interest rate
+        :param market_ret: annualized market return
+        """
+
         debt_value = max(1, debt_value)
         mkt_ex_ret = market_ret - risk_free_rate*debt_maturity
         asset_value = implied_asset_price(
