@@ -58,8 +58,8 @@ def _regress_firm_params(
 
 class FirmStructuralCreditRisk:
 
-    def __init__(self):
-        self.firm_params = None
+    def __init__(self, firm_params=None):
+        self.firm_params = firm_params
 
     def fit(
             self,
@@ -152,7 +152,7 @@ class FirmStructuralCreditRisk:
         :param equity_value: firm's market equity value
         :param debt_value: firm's debts value on balance sheet
         :param debt_maturity: firm's debts maturity
-        :param risk_free_rate: risk-free interest rate
+        :param risk_free_rate: continuously compounded risk-free interest rate
         :param market_ret: annualized market return
         """
 
@@ -180,3 +180,85 @@ class FirmStructuralCreditRisk:
             beta=self.firm_params.beta,
             mkt_ex_ret=mkt_ex_ret
         ))
+
+
+def create_systematic_default_dataset(firm_data, treasury_yields, bonds_index, equities_index):
+    dataset = firm_data.merge(treasury_yields, on='date')
+    dataset = dataset.rename(columns={'yield': 'treasury_yield'})
+    dataset = dataset.merge(bonds_index, on='date').rename(columns={'price': 'bonds_index'})
+    dataset = dataset.merge(equities_index, on='date').rename(columns={'price': 'equities_index'})
+    dataset = dataset.dropna(subset='treasury_yield')
+    return dataset
+
+
+def create_firm_model(dataset, interval, expected_market_ret, equity_ratio=0.81, return_assets=False):
+    equity_mkt_rets = np.diff(np.log(dataset['equities_index']))
+    bnd_mkt_rets = np.diff(np.log(dataset['bonds_index']))
+    market_rets = equity_ratio * equity_mkt_rets + (1 - equity_ratio) * bnd_mkt_rets
+
+    debt_values = (dataset['shortTermDebt'] + dataset['longTermDebt'] / 2).values
+    risk_free_rates = dataset['treasury_yield'].iloc[:-1].values
+
+    model = FirmStructuralCreditRisk()
+    res = model.fit(
+        expected_market_ret=expected_market_ret,
+        market_rets=market_rets,
+        equity_values=dataset['marketCap'].values,
+        debt_values=debt_values,
+        debt_maturities=[1] * len(dataset),
+        interval=interval,
+        risk_free_rates=risk_free_rates,
+    )
+    if return_assets:
+        return model, res
+    else:
+        return model
+
+
+def get_default_count_probs(default_vectors):
+    default_vectors = [v[:, np.newaxis] for v in default_vectors]
+
+    while len(default_vectors) > 1:
+        next_vectors = []
+        for i in range(0, len(default_vectors) - 1, 2):
+            default_mat = default_vectors[i] @ default_vectors[i + 1].T
+            max_num_defaults = default_mat.shape[0] + default_mat.shape[1] - 2
+            default_vec = np.zeros(max_num_defaults + 1)
+
+            for j in range(default_mat.shape[0]):
+                for k in range(default_mat.shape[1]):
+                    default_vec[j + k] += default_mat[j, k]
+
+            default_vec = default_vec[:, np.newaxis]
+            next_vectors.append(default_vec)
+
+        if len(default_vectors) % 2 != 0:
+            next_vectors.append(default_vectors[-1])
+        default_vectors = next_vectors
+
+    return default_vectors[0].squeeze()
+
+
+def get_systematic_default_probs(datasets, interval, firms_data, market_ret):
+    firm_models = {
+        ticker: create_firm_model(
+            dataset,
+            interval=interval,
+            expected_market_ret=market_ret,
+        )
+        for ticker, dataset in datasets.items()
+    }
+
+    default_probs = {
+        ticker: model.predict_default(
+            equity_value=firms_data[ticker]['equity_value'],
+            debt_value=firms_data[ticker]['debt_value'],
+            debt_maturity=firms_data[ticker]['debt_maturity'],
+            risk_free_rate=firms_data[ticker]['risk_free_rate'],
+            market_ret=market_ret
+        )
+        for ticker, model in firm_models.items()
+    }
+    default_vectors = [np.array([1 - p, p]) for p in default_probs.values()]
+    sys_default_probs = get_default_count_probs(default_vectors)
+    return sys_default_probs, default_probs, firm_models
