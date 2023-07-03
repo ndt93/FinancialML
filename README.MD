@@ -92,6 +92,9 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 
 --- [TBD]
 
+### Other Papers
+- [x] Systematic default for market return prediction using structural credit risk model
+
 ---
 ## References
 * Lopez de Prado, M. (2018). Advances in financial machine learning. John Wiley & Sons.
@@ -128,3 +131,8 @@ no arbitrage models (ho-lee, hull-white, BDT, BK), bond options, volatility stru
 * Easley, D., R. Engle, M. O’Hara, and L. Wu (2008): “Time-varying arrival rates of informed and uninformed traders.” Journal of Financial Econometrics, Vol. 6, No. 2, pp. 171–207.
 * Eisler, Z., J. Bouchaud, and J. Kockelkoren (2012): “The impact of order book events: Market orders, limit orders and cancellations.” Quantitative Finance, Vol. 12, No. 9, pp. 1395– 1419.
 * O’Hara, M. (1995): Market Microstructure, 1st ed. Blackwell, Oxford.
+* Jack Bao, Kewei Hou, Shaojun Zhang, Systematic default and return predictability in the stock and bond markets, Journal of Financial Economics, Volume 149, Issue 3, 2023, Pages 349-377,
+* Vassalou, Maria and Xing, Yuhang, Default Risk in Equity Returns
+* Coval, Joshua D., Jakub W. Jurek, and Erik Stafford. 2009. "Economic Catastrophe Bonds." American Economic Review, 99 (3): 628-66.
+* Robert J. Hodrick, Dividend Yields and Expected Stock Returns: Alternative Procedures for Inference and Measurement, The Review of Financial Studies, Volume 5, Issue 3, July 1992, Pages 357–386.
+* Bryan Kelly , Hao Jiang, Tail Risk and Asset Prices, The Review of Financial Studies, Volume 27, Issue 10, October 2014, Pages 2841–2871.
