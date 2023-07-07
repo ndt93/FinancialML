@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 from scipy.stats import norm
 import statsmodels.api as sm
 
@@ -215,7 +216,19 @@ def create_firm_model(dataset, interval, expected_market_ret, equity_ratio=0.81,
         return model
 
 
-def get_default_count_probs(default_vectors):
+def create_firm_models(datasets: dict[pd.DataFrame], interval: float, market_ret: float):
+    firm_models = {
+        ticker: create_firm_model(
+            dataset,
+            interval=interval,
+            expected_market_ret=market_ret,
+        )
+        for ticker, dataset in datasets.items()
+    }
+    return firm_models
+
+
+def _get_default_count_probs(default_vectors):
     default_vectors = [v[:, np.newaxis] for v in default_vectors]
 
     while len(default_vectors) > 1:
@@ -239,16 +252,7 @@ def get_default_count_probs(default_vectors):
     return default_vectors[0].squeeze()
 
 
-def get_systematic_default_probs(datasets, interval, firms_data, market_ret):
-    firm_models = {
-        ticker: create_firm_model(
-            dataset,
-            interval=interval,
-            expected_market_ret=market_ret,
-        )
-        for ticker, dataset in datasets.items()
-    }
-
+def predict_systematic_default(firm_models: dict[FirmStructuralCreditRisk], firms_data: dict, market_ret: float):
     default_probs = {
         ticker: model.predict_default(
             equity_value=firms_data[ticker]['equity_value'],
@@ -260,5 +264,5 @@ def get_systematic_default_probs(datasets, interval, firms_data, market_ret):
         for ticker, model in firm_models.items()
     }
     default_vectors = [np.array([1 - p, p]) for p in default_probs.values()]
-    sys_default_probs = get_default_count_probs(default_vectors)
-    return sys_default_probs, default_probs, firm_models
+    sys_default_probs = _get_default_count_probs(default_vectors)
+    return sys_default_probs, default_probs
