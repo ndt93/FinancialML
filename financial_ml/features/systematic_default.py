@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 import statsmodels.api as sm
+from joblib import Parallel, delayed
 
 from financial_ml.tools.option import implied_asset_price
 
@@ -216,15 +217,17 @@ def create_firm_model(dataset, interval, expected_market_ret, equity_ratio=0.81,
         return model
 
 
-def create_firm_models(datasets: dict[pd.DataFrame], interval: float, market_ret: float):
-    firm_models = {
-        ticker: create_firm_model(
+def create_firm_models(datasets: dict[pd.DataFrame], interval: float, market_ret: float, n_jobs=None):
+    datasets = list(datasets.items())
+    firm_models = Parallel(n_jobs=n_jobs)(
+        delayed(create_firm_model)(
             dataset,
             interval=interval,
             expected_market_ret=market_ret,
         )
-        for ticker, dataset in datasets.items()
-    }
+        for _, dataset in datasets
+    )
+    firm_models = dict(zip([ticker for ticker, _ in datasets], firm_models))
     return firm_models
 
 
