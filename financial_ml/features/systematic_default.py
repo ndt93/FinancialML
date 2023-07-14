@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from scipy import integrate
+from scipy.interpolate import CubicSpline
 from scipy.stats import norm
 import statsmodels.api as sm
 from joblib import Parallel, delayed
@@ -255,7 +257,13 @@ def _get_default_count_probs(default_vectors):
     return default_vectors[0].squeeze()
 
 
-def predict_systematic_default(firm_models: dict[FirmStructuralCreditRisk], firms_data: dict, market_ret: float):
+def predict_cond_sys_default(
+        firm_models: dict[FirmStructuralCreditRisk], firms_data: dict, market_ret: float
+):
+    """
+    Predict probabilities of 0, 1, 2,... firms default at the same time and default probability of each firm
+    conditioned on a give market return
+    """
     default_probs = {
         ticker: model.predict_default(
             equity_value=firms_data[ticker]['equity_value'],
@@ -269,3 +277,12 @@ def predict_systematic_default(firm_models: dict[FirmStructuralCreditRisk], firm
     default_vectors = [np.array([1 - p, p]) for p in default_probs.values()]
     sys_default_probs = _get_default_count_probs(default_vectors)
     return sys_default_probs, default_probs
+
+
+def predict_uncond_sys_default(cond_market_rets, cond_sys_default_probs, market_ret_pdf):
+    """
+    Predict unconditional systematic default probability given conditional default probabilities
+    """
+    spline = CubicSpline(x=cond_market_rets, y=cond_sys_default_probs)
+    res = integrate.quad(lambda r: market_ret_pdf(r) * spline(r), -1, 1)[0]
+    return res

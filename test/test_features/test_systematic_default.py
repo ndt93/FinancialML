@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from financial_ml.features.systematic_default import FirmStructuralCreditRisk, predict_systematic_default
+from financial_ml.features.systematic_default import FirmStructuralCreditRisk, predict_cond_sys_default
 
 
 def test_firm_model():
@@ -63,5 +63,5 @@ def test_systematic_default():
         }
         for ticker, dataset in datasets.items()
     }
-    sys_probs, _, _ = predict_systematic_default(datasets_monthly, 1 / 12, firms_data, 0.12)
+    sys_probs, _, _ = predict_cond_sys_default(datasets_monthly, 1 / 12, firms_data, 0.12)
     np.testing.assert_array_almost_equal(sys_probs, np.array([1., 0., 0., 0., 0., 0., 0., 0., 0.]))
